@@ -35,7 +35,7 @@
 // TODO : Remove all debug functions.
 // TODO : More support for sorting national languages - use build it sort algorithms
 // TODO : Revisit the CSS styling before 1.0 release
-// TODO : Add filters for sorted head, subhead, and description, and links.  
+// TODO : Add filters for sorted head, subhead, and description, and links.
 // TODO : Rename heading filter.
 // TODO : Index settings templates.
 // TODO : Ability to sort indexes alphabetically by name.
@@ -85,7 +85,7 @@ function az_add_admin_page() {
 
 /**
  * Set up all the available options as keys to an array with the values being
- * the description of what each option does. 
+ * the description of what each option does.
  *
  * @param $keys if true, create an array of the keys (option names) only
  * @return array of options
@@ -123,15 +123,15 @@ function az_get_options($keys = false) {
 }
 
 /**
- * Called when the plugin is activated. Create an empty indexes table in the WordPress 
- * database, if one does not already exist.  If we are upgrading then we create a 
+ * Called when the plugin is activated. Create an empty indexes table in the WordPress
+ * database, if one does not already exist.  If we are upgrading then we create a
  * wp_az_indexes_upgrade table first and then, if the table is successfully upgraded then
  * we rename it to wp_az_indexes.  This prevents data loss if something goes badly wrong
  * during the upgrade.
  */
 function az_plugin_activate() {
     az_trace("fn:az_plugin_activate : start");
-    
+
     include_once(ABSPATH.'/wp-admin/includes/upgrade.php');
     global $wpdb;
 
@@ -147,29 +147,29 @@ function az_plugin_activate() {
     $options = az_get_options(true);
     $sql = "CREATE TABLE ".AZ_TABLE.$upgrade." ( name text NOT NULL, idindex int NOT NULL, categories text,"
                                ." tags text, heading text, subheading text, description text,"
-                               ." cols tinyint, headingseparator text, itemsperpage smallint," 
-                               ." ignorechars text, nlslocale text, nlsequiv text," 
+                               ." cols tinyint, headingseparator text, itemsperpage smallint,"
+                               ." ignorechars text, nlslocale text, nlsequiv text,"
                                ." customcsssingle text, customcssgroup text,"
-                               ." customlinks text, customsort text," 
+                               ." customlinks text, customsort text,"
                                ." options set(";
     for ($i = 0; $i < count($options); $i++) {
-        $sql .= ($i > 0 ? ", " : "")."'".$options[$i]."'";                                       
-    }   
+        $sql .= ($i > 0 ? ", " : "")."'".$options[$i]."'";
+    }
     // Always put the cache columns at the end of the table.
     $sql .= "), itemcache mediumblob, linkcache blob, PRIMARY KEY(idindex))";
-    
+
     // If the database supports the default character set then add it to
     // the creation query (Note: might be giving a false positive in some cases).
     if ($wpdb->supports_collation()) {
         $charset = " DEFAULT CHARACTER SET $wpdb->charset;";
     }
 
-    // Try creating with the default charset clause, but if that fails try again without it 
+    // Try creating with the default charset clause, but if that fails try again without it
     $created = maybe_create_table(AZ_TABLE.$upgrade, $sql.$charset);
     if (!$create) {
         $created = maybe_create_table(AZ_TABLE.$upgrade, $sql);
     }
-    
+
     // Only create the table if old does not already exist.
     if ($created) {
         if (!empty($upgrade)) {
@@ -183,19 +183,19 @@ function az_plugin_activate() {
             foreach ($indexes as $index) {
                 // Upgrade the custom css with new styles added since version 0.3, if necessary.
                 // Note: must assign back to $index for this to work in PHP4.
-                $index = az_maybe_add_css($index, 'li.azalt', $css30);       
-                $index = az_maybe_add_css($index, 'h2 .azcont', $css40);       
-                $index = az_maybe_add_css($index, '.head .azcont', $css40g, true);       
-            
+                $index = az_maybe_add_css($index, 'li.azalt', $css30);
+                $index = az_maybe_add_css($index, 'h2 .azcont', $css40);
+                $index = az_maybe_add_css($index, '.head .azcont', $css40g, true);
+
                 // Upgrade the database table
-                if ($wpdb->query("INSERT INTO ".AZ_TABLE.$upgrade." VALUES ('$index->name', '$index->idindex', '$index->categories'," 
-                            ." '$index->tags', '$index->heading', '$index->subheading', '$index->description', '$index->cols'," 
+                if ($wpdb->query("INSERT INTO ".AZ_TABLE.$upgrade." VALUES ('$index->name', '$index->idindex', '$index->categories',"
+                            ." '$index->tags', '$index->heading', '$index->subheading', '$index->description', '$index->cols',"
                             ." '$index->headingseparator', '$index->itemsperpage', '$index->ignorechars',"
                             ." '$index->nlslocale', '$index->nlsequiv',"
                             ." '$index->customcsssingle', '$index->customcssgroup',"
                             ." '$index->customlinks', '$index->customsort', '$index->options', null, null)") === false) {
                     $error = 'upgrade-table-failed';
-                    break;                
+                    break;
                 }
     	    }
         }
@@ -226,7 +226,7 @@ function az_plugin_activate() {
         }
         add_option('az_plugin_error', $error);
     }
-    
+
     // If we're activating but didn't have to upgrade the database
     // we still have to flush all the caches because they could
     // be out of date.
@@ -249,7 +249,7 @@ function az_plugin_deactivate() {
 
 /**
  * Called when the plugin is uninstalled.  Removes the database table
- * and all the AZIndex options.  
+ * and all the AZIndex options.
  */
 function az_plugin_uninstall() {
     require_once(ABSPATH.'wp-admin/includes/plugin.php');
@@ -257,28 +257,28 @@ function az_plugin_uninstall() {
     global $wpdb;
     deactivate_plugins(AZ_PLUGIN_FILE);
     delete_option('az_plugin_version');
-    delete_option('az_plugin_error');    
-    delete_option('az_sort_index_table');    
+    delete_option('az_plugin_error');
+    delete_option('az_sort_index_table');
     delete_option('az_max_index');
-    delete_option('az_cache_dirty');    
+    delete_option('az_cache_dirty');
     $wpdb->query("DROP TABLE IF EXISTS ".AZ_TABLE);
     az_trace("fn:az_plugin_uninstall : end");
 }
 
 /**
- * Check for the first compatible level of the database. 
+ * Check for the first compatible level of the database.
  * This is currently version 0.7.1 when the CREATE TABLE statement was modified.
- * 
+ *
  * NOTE: The following is the way to test for a field change (if there are no option changes)
  *       $compatible = $wpdb->query("SHOW COLUMNS FROM ".AZ_TABLE." LIKE 'itemcache'");
  *
  *       The following is the way to test for an option change (i.e. just a new option was added:
  *       $compatible = false;
- *       $results = $wpdb->get_col("SHOW COLUMNS FROM ".AZ_TABLE." LIKE 'options'", 1);    
+ *       $results = $wpdb->get_col("SHOW COLUMNS FROM ".AZ_TABLE." LIKE 'options'", 1);
  *       if (!empty($results)) {
- *          $compatible = strpos($results[0], 'child-cats') !== false;         
+ *          $compatible = strpos($results[0], 'child-cats') !== false;
  *       }
- *  
+ *
  * @return true if this is a compatible version of the database
  */
 function az_is_compatible_version() {
@@ -289,7 +289,7 @@ function az_is_compatible_version() {
 }
 
 /**
- * Check for version of the database we cannot upgrade from. 
+ * Check for version of the database we cannot upgrade from.
  * This is version 0.2.1 or lower.
  *
  * @return true if this is an incompatible alpha version of the database
@@ -329,7 +329,7 @@ function az_maybe_add_css($index, $needle, $style, $grouponly = false) {
 }
 
 /**
- * Process the action requested by the user, then redirect to the main indexes admin page.  
+ * Process the action requested by the user, then redirect to the main indexes admin page.
  * If no action is specified, then skip all processing.
  */
 function az_process_requests() {
@@ -338,57 +338,57 @@ function az_process_requests() {
     //az_trace('POST vals = '.implode('|', $_POST));
     //az_trace(' GET keys = '.implode('|', array_keys($_GET)));
     //az_trace(' GET vals = '.implode('|', $_GET));
-    
+
     az_trace('--- init --------------------------------------------');
     az_trace('fn:az_process_requests : start');
     global $az_req;
-    
+
     $req = new az_request();
-        
+
     az_trace('fn:az_process_requests : action = '.$req->action);
-    if (!empty($req->action) && ($req->action == 'az-add-index' || $req->action == 'az-update-index' 
-                              || $req->action == 'az-delete-index' || $req->action == 'az-clear-cache' 
+    if (!empty($req->action) && ($req->action == 'az-add-index' || $req->action == 'az-update-index'
+                              || $req->action == 'az-delete-index' || $req->action == 'az-clear-cache'
                               || $req->action == 'cancel' || $req->action == 'az-uninstall-plugin')) {
 
         if ($req->action == 'az-update-index' || $req->action == 'az-add-index') {
 
             // Collect the parameters from the POST data returned from the user.
             $req->set_vars_from_post();
-        
+
             if (empty($req->error_field)) {
                 az_trace("fn:az_process_requests : no errors found");
-            
+
                 $req->escape_vars();
-                        
-                if ($req->head == 'custom' || 
-                   (($req->head == 'tags' || $req->head == 'cats') 
+
+                if ($req->head == 'custom' ||
+                   (($req->head == 'tags' || $req->head == 'cats')
                           && !empty($req->headkey))) $req->head .= ':'.$req->headkey;
                 if ($req->subhead == 'custom') $req->subhead .= ':'.$req->subheadkey;
                 if ($req->desc == 'custom') $req->desc .= ':'.$req->desckey;
             }
-        
+
         } else if ($req->action == 'az-delete-index' || $req->action == 'az-clear-cache') {
             // Collect the parameters from the GET data returned from the user and
             // fill the rest in from the database entry for the index.
             $req->set_vars_from_get();
         }
-    
+
         if (empty($req->error_field)) {
-    
+
             global $wpdb;
             $msgno = 0;
             $wpdb->show_errors();
 
             if ($req->action == 'az-update-index') {
-                 
+
                 // Update the settings for the index being edited.
                 az_trace("fn:az_process_requests : updating index for indexid : ".$req->id." options: ".$req->options);
-                
+
                 $query = "UPDATE ".AZ_TABLE." SET name = '$req->name', categories = '$req->catids', tags = '$req->tagids', heading = '$req->head', "
-                                                ."subheading = '$req->subhead', description = '$req->desc', cols = $req->cols, " 
-                                                ."headingseparator = '$req->headsep', itemsperpage = $req->perpage, ignorechars = '$req->ignorechars', " 
-                                                ."nlslocale = '$req->nlslocale', nlsequiv = '$req->nlsequiv', " 
-                                                ."customcsssingle = '$req->csssingle', customcssgroup = '$req->cssgroup', " 
+                                                ."subheading = '$req->subhead', description = '$req->desc', cols = $req->cols, "
+                                                ."headingseparator = '$req->headsep', itemsperpage = $req->perpage, ignorechars = '$req->ignorechars', "
+                                                ."nlslocale = '$req->nlslocale', nlsequiv = '$req->nlsequiv', "
+                                                ."customcsssingle = '$req->csssingle', customcssgroup = '$req->cssgroup', "
                                                 ."customlinks = '$req->customlinks', customsort = '$req->customsort', "
                                                 ."options = '$req->options', itemcache = NULL, linkcache = NULL WHERE idindex = $req->id";
                 $rc = $wpdb->query($query);
@@ -396,22 +396,22 @@ function az_process_requests() {
                 az_flush_html_cache($req->id);
                 $msgno = 1;
                 az_trace("fn:az_process_requests : rc = ".$rc." query = ".$query);
-                
+
             } else if ($req->action == 'az-add-index') {
 
-            	$msgno = 2;            	
+            	$msgno = 2;
                 // Create a new index and index page using the settings provided by the user.
                 az_trace("fn:az_process_requests : adding index for indexid : ".$req->id);
-                
+
                 // Get the next available index id -- always increment, even if previous indexes are deleted.
                 $idindex = intval(get_option('az_max_index')) + 1;
-                $rc = $wpdb->query("INSERT INTO ".AZ_TABLE." VALUES ('$req->name', '$idindex', '$req->catids', '$req->tagids'," 
-                                  ."'$req->head', '$req->subhead', '$req->desc', '$req->cols', '$req->headsep', '$req->perpage'," 
-                                  ."'$req->ignorechars', '$req->nlslocale', '$req->nlsequiv', '$req->csssingle', '$req->cssgroup', '$req->customlinks'," 
+                $rc = $wpdb->query("INSERT INTO ".AZ_TABLE." VALUES ('$req->name', '$idindex', '$req->catids', '$req->tagids',"
+                                  ."'$req->head', '$req->subhead', '$req->desc', '$req->cols', '$req->headsep', '$req->perpage',"
+                                  ."'$req->ignorechars', '$req->nlslocale', '$req->nlsequiv', '$req->csssingle', '$req->cssgroup', '$req->customlinks',"
                                   ."'$req->customsort', '$req->options', null, null)");
                 if ($rc) {
                     update_option('az_max_index', $idindex);
-                	$pageid = wp_insert_post(array('post_title' => $req->name, 'post_type' => 'page', 
+                	$pageid = wp_insert_post(array('post_title' => $req->name, 'post_type' => 'page',
                 	                               'post_content' => '[az-index id="'.$idindex.'"]'));
                 	if (empty($pageid)) {
                 		$msgno = 22;
@@ -420,26 +420,26 @@ function az_process_requests() {
                 	$msgno = 21;
                 }
                 az_trace("fn:az_process_requests : az-add-index : rc = ".$rc."");
-                
+
             } else if ($req->action == 'az-delete-index') {
-                
+
             	// Delete the index selected by the user.
                 az_trace("fn:az_process_requests : az-delete index : ".$req->id);
-                
+
                 $rc = $wpdb->query("DELETE FROM ".AZ_TABLE." WHERE idindex = $req->id");
                 $msgno = $rc ? 3 : 31;
                 az_flush_html_cache($req->id);
 
             } else if ($req->action == 'az-clear-cache') {
-                
+
                 // Clear the cache for the selected index
                 az_trace("fn:az_process_requests : clearing cache for indexid : ".$req->id." options: ".$req->options);
-                
+
                 az_flush_cache($req->id);
-                
+
                 az_trace("fn:az_process_requests : az-clear-cache : rc = ".$rc." query = ".$query);
                 $msgno = 4;
-                                
+
             } else if ($req->action == 'az-uninstall-plugin') {
                 az_plugin_uninstall();
                 wp_redirect('plugins.php');
@@ -451,8 +451,8 @@ function az_process_requests() {
             az_redirect($msgno);
         }
     } else {
-        // Nothing to do but fetch the parameters from the 'GET' request. 
-        $req->set_vars_from_get();   
+        // Nothing to do but fetch the parameters from the 'GET' request.
+        $req->set_vars_from_get();
     }
     // Save the request parameters in a global variable for later use.
     $az_req = $req;
@@ -461,9 +461,9 @@ function az_process_requests() {
 
 function az_get_indexes($fields, $sortby = false) {
     global $wpdb;
-    
+
     $current_sort = get_option('az_sort_index_table');
-    
+
     if (!empty($sortby)) {
         if (strpos($current_sort, $sortby) !== false) {
             if (strpos($current_sort, "ASC") !== false) {
@@ -503,6 +503,7 @@ function az_get_index($idindex, $fields) {
  * @return the names of the categories or tags in the supplied string
  */
 function az_get_term_names($term_id_string, $taxonomy) {
+    $output = null;
     az_trace('fn:az_get_term_names: term_id_string = '.$term_id_string.", taxonomy = ".$taxonomy);
 
     if (!empty($term_id_string)) {
@@ -515,7 +516,7 @@ function az_get_term_names($term_id_string, $taxonomy) {
                 az_trace('fn:az_get_term_names: item = '.$item);
                 $not = '';
                 if ($item[0] == '~') {
-                    $not = '~'; 
+                    $not = '~';
                     $item = trim($item, '~');
                 }
                 $term = get_term_field('name', $item, $taxonomy, 'edit');
@@ -532,8 +533,8 @@ function az_get_term_names($term_id_string, $taxonomy) {
 
 /**
  * Make an http redirect request to put us back on the main indexes admin page.
- * 
- * @param $msg number of the message to be displayed, if non-zero. 
+ *
+ * @param $msg number of the message to be displayed, if non-zero.
  */
 function az_redirect($msg) {
     az_trace('fn:az_redirect : redirect to '.AZ_PAGENAME.($msg != 0 ? '&msg='.$msg : ''));
@@ -545,18 +546,18 @@ function az_redirect($msg) {
  * be displayed if the supplied action isn't 'az-redirect'.
  */
 function az_display_admin_page() {
-        
+
     az_trace('--- admin --------------------------------------------');
     az_trace('fn:az_manage_indexes : start');
     global $az_req;
     az_trace('fn:az_manage_indexes : action = '.$az_req->action);
-    
+
     if ($az_req->action == 'az-sort-indexes' || empty($az_req->action) && empty($az_req->error_field)) {
         // By default, display the table of indexes.
-        az_display_index_table($az_req); 
+        az_display_index_table($az_req);
     } else if ($az_req->action != 'az-redirect') {
-        // Otherwise, display the edit panel for an index. 
-        az_display_index_dialog($az_req);        
+        // Otherwise, display the edit panel for an index.
+        az_display_index_dialog($az_req);
     }
     az_trace('fn:az_manage_indexes : end');
 }
@@ -566,19 +567,19 @@ function az_display_admin_page() {
  *
  * @param $req request parameters used to fill in the table contents on the page
  */
-function az_display_index_table($req) { 
+function az_display_index_table($req) {
 
-    global $wpdb; 
+    global $wpdb;
     ?>
 
     <style type="text/css">
         .az-hide {
             display: none;
         }
-        .az-error { 
+        .az-error {
             background-color: #fcc;
             color: #f00;
-            font-weight: bold;          
+            font-weight: bold;
         }
         #uninstall-button:disabled, #uninstall-button:disabled:hover {
             border-color: #ccc;
@@ -604,7 +605,7 @@ function az_display_index_table($req) {
                             <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=idindex' class='reset'>Index ID</a></th>
                             <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=name' class='reset'>Index Name</a></th>
                             <th>Included</th>
-                            <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=categories' class='reset'>Categories</a></th>               
+                            <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=categories' class='reset'>Categories</a></th>
                             <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=tags' class='reset'>Tags</a></th>
                             <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=heading' class='reset'>Heading Field</a></th>
                             <th><a href='<?php echo AZ_PAGENAME; ?>&amp;action=az-sort-indexes&amp;by=subheading' class='reset'>Subheading Field</a></th>
@@ -613,8 +614,8 @@ function az_display_index_table($req) {
                         </tr>
                     </thead>
                     <tbody id="manage_index_pages">
-                        <?php foreach ($indexes as $index) { 
-                            // Decode for Javascript function call 
+                        <?php foreach ($indexes as $index) {
+                            // Decode for Javascript function call
                             $name = addslashes(html_entity_decode($index->name));
                             if (az_begins_with($index->heading, "tags:")) {
                                 $index->heading = "tags(".az_get_term_names(substr($index->heading, strpos($index->heading, ":") + 1), 'post_tag').")";
@@ -622,7 +623,7 @@ function az_display_index_table($req) {
                             if (az_begins_with($index->heading, "cats:")) {
                                 $index->heading = "cats(".az_get_term_names(substr($index->heading, strpos($index->heading, ":") + 1), 'category').")";
                             }
-                            ?> 
+                            ?>
                             <tr>
                                 <td><?php echo $index->idindex; ?></td>
                                 <td><?php echo $index->name; ?></td>
@@ -641,15 +642,15 @@ function az_display_index_table($req) {
                 </table>
             <?php } else { ?>
                 <p>No index pages found.</p>
-            <?php } 
+            <?php }
         } else { ?>
             <div id="message" class="error fade az-error"><p>
                 <?php if (!az_is_table_present()) {
-                    echo az_get_admin_error_message('database-not-found'); 
+                    echo az_get_admin_error_message('database-not-found');
                 } else if (!az_is_alpha_version()) {
                     echo az_get_admin_error_message('version-out-of-date');
                 } else {
-                    echo az_get_admin_error_message('version-incompatible'); 
+                    echo az_get_admin_error_message('version-incompatible');
                 } ?>
             </p></div>
         <?php } ?>
@@ -659,7 +660,7 @@ function az_display_index_table($req) {
             }
             function uninstall_plugin() {
                 link = document.getElementById('uninstall');
-                link.className = link.className == '' ? 'az-hide' : ''; 
+                link.className = link.className == '' ? 'az-hide' : '';
                 document.getElementById('uninstall-check').checked = false;
                 document.getElementById('uninstall-button').disabled = true;
             }
@@ -669,10 +670,10 @@ function az_display_index_table($req) {
             }
         </script>
         <div style="margin-top:20px;border:2px solid #ffcc99;background-color:#ffeecc;padding:10px;">
-             For more help with AZIndex, please visit the 
+             For more help with AZIndex, please visit the
              <a href="http://azindex.englishmike.net">AZIndex Plugin Website</a>
              where you will find tutorials, examples, and plenty of other information
-             on using the plugin. 
+             on using the plugin.
         </div>
         <div class="tablenav" />
         <br class="clear" />
@@ -691,36 +692,36 @@ function az_display_uninstall_form() {  ?>
     <div id='uninstall' class='az-hide'>
         <p>You are about to uninstall the AZIndex plugin.
         <p>All indexes and settings created using the AZIndex plugin will be deleted, including the database table used by the plugin (wp_az_indexes).</p>
-        <p>If you just want to deactivate the plugin temporarily, go to the <a href="plugins.php">Plugin Management</a> page and deactivate it from there</p>  
+        <p>If you just want to deactivate the plugin temporarily, go to the <a href="plugins.php">Plugin Management</a> page and deactivate it from there</p>
         <p style="color:red">Once you click uninstall, it cannot be undone.</p>
         <p>Note: this will not delete the plugin from the system. The plugin can still be reactivated from the Plugin Management page later.</p>
         <div style="margin:20px 0 0 40px;padding:30px;text-align:center;width:500px;border 1px dotted #ddd;background-color:#eee;">
             <p>Are you sure you want to uninstall the AZIndex plugin?</p>
-            <input type="checkbox" name="uninstall-check" id="uninstall-check" onclick='uninstall_confirmed()'>&nbsp;Yes 
+            <input type="checkbox" name="uninstall-check" id="uninstall-check" onclick='uninstall_confirmed()'>&nbsp;Yes
             <br/>
             <form name="uninstall" id="uninstall" class="add validate" method="post" action="<?php echo AZ_PAGENAME; ?>">
                 <input type="hidden" name="action" value="az-uninstall-plugin" />
                 <input style="margin-top: 20px;" disabled id="uninstall-button" type="submit" class="button" name="submit" value="Uninstall AZIndex" />
             </form>
-        </div>  
+        </div>
     </div>
 <?php }
 
 /**
  * Display the add/edit index dialog, and set the fields specified in
- * $req if necessary. 
+ * $req if necessary.
  *
  * @param $req parameters to be used in the dialog fields
  */
-function az_display_index_dialog($req) { 
+function az_display_index_dialog($req) {
 
-    $language = array("General European", "Czech", "Danish", "Esperanto", "Estonian", 
-                      "Hungarian", "Icelandic", "Latvian", "Lithuanian", "Polish", "Romanian", 
+    $language = array("General European", "Czech", "Danish", "Esperanto", "Estonian",
+                      "Hungarian", "Icelandic", "Latvian", "Lithuanian", "Polish", "Romanian",
                       "Roman", "Slovak", "Slovenian", "Spanish", "Swedish", "Turkish");
     ?>
     <style type="text/css">
-        .az-error { 
-            background-color: #fcc;                 
+        .az-error {
+            background-color: #fcc;
         }
         .az-hide {
             display: none;
@@ -751,7 +752,7 @@ function az_display_index_dialog($req) {
         } else {
             echo '<h2>Add Index</h2>';
         } ?>
-            
+
         <div id="ajax-response"></div>
         <span id="autosave"></span>
         <form name="addindex" id="addindex" class="add validate" method="post" action="<?php echo AZ_PAGENAME; ?>">
@@ -771,8 +772,8 @@ function az_display_index_dialog($req) {
                     <th scope="row"><label for="cats">Include/exclude posts in these categories</label></th>
                     <td class="<?php echo $req->error_field['cats']; ?>">
                         <input name="cats" id="cats" type="text" value="<?php echo $req->cats; ?>" size="40" />
-                        <br/>Zero, one, or more categories, separated by commas (e.g. "tv, radio, movies").&nbsp; 
-                             To exclude posts in a specific category from the index, put a '~' character in front of the category name (e.g. "~reviews, ~news") 
+                        <br/>Zero, one, or more categories, separated by commas (e.g. "tv, radio, movies").&nbsp;
+                             To exclude posts in a specific category from the index, put a '~' character in front of the category name (e.g. "~reviews, ~news")
                     </td>
                 </tr>
                 <tr class="form-field">
@@ -782,20 +783,20 @@ function az_display_index_dialog($req) {
                         <br/>Zero, one, or more tags, separated by commas (e.g. "american, canadian, british").&nbsp;
                              To exclude posts with a specific tag from the index, put a '~' character in front of the category name (e.g. "~culture, ~music")
                     </td>
-                    
+
                 </tr>
                 <tr class="form-field">
                     <th scope="row"><label for="head">Index headings</label></th>
                     <td class="<?php echo $req->error_field['headkey']; ?>" >
-                        <select id="head" name="head" style="width:10em;margin: 3px 0" 
+                        <select id="head" name="head" style="width:10em;margin: 3px 0"
                                 onchange="selchanged('head-key-field', this[this.selectedIndex].value);">
-                            <?php az_add_options($req->head, false); ?> 
+                            <?php az_add_options($req->head, false); ?>
                         </select>
                         <span id="head-key-field">
                             <span id="head-key-custom" style="padding-left:10px">Enter custom field key name:</span>
                             <span id="head-key-tags" style="padding-left:10px">Enter tags to exclude from index:</span>
                             <span id="head-key-cats" style="padding-left:10px">Enter categories to exclude from index:</span>
-                            <input name="head-key" id="head-key" type="text" style="width:20em" 
+                            <input name="head-key" id="head-key" type="text" style="width:20em"
                                    value="<?php echo $req->headkey; ?>" size="30" />
                         </span>
                     </td>
@@ -803,14 +804,14 @@ function az_display_index_dialog($req) {
                 <tr class="form-field">
                     <th scope="row"><label for="subhead">Index subheadings</label></th>
                     <td class="<?php echo $req->error_field['subheadkey']; ?>">
-                        <select id="subhead" name="subhead" style="width:10em;margin:3px 0" 
+                        <select id="subhead" name="subhead" style="width:10em;margin:3px 0"
                                 onchange="selchanged('subhead-key-field', this[this.selectedIndex].value);
-                                          selchanged('group-subhead', this[this.selectedIndex].value);"> 
-                            <?php az_add_options($req->subhead); ?> 
+                                          selchanged('group-subhead', this[this.selectedIndex].value);">
+                            <?php az_add_options($req->subhead); ?>
                         </select>
                         <span id="subhead-key-field">
                             <span style="padding-left:10px">Enter custom field key name:</span>
-                            <input name="subhead-key" id="subhead-key" type="text" style="width:20em" 
+                            <input name="subhead-key" id="subhead-key" type="text" style="width:20em"
                                    value="<?php echo $req->subheadkey; ?>" size="20" />
                         </span>
                     </td>
@@ -818,13 +819,13 @@ function az_display_index_dialog($req) {
                 <tr class="form-field">
                     <th scope="row"><label for="desc">Description</label></th>
                     <td class="<?php echo $error_field['desckey']; ?>" >
-                        <select id="desc" name="desc" style="width:10em;margin:3px 0" 
+                        <select id="desc" name="desc" style="width:10em;margin:3px 0"
                                 onchange="selchanged('desc-key-field', this[this.selectedIndex].value);">
-                            <?php az_add_options($req->desc); ?> 
+                            <?php az_add_options($req->desc); ?>
                         </select>
                         <span id="desc-key-field">
                             <span style="padding-left:10px">Enter custom field key name:</span>
-                            <input name="desc-key" id="subhead-key" type="text" style="width:20em" 
+                            <input name="desc-key" id="subhead-key" type="text" style="width:20em"
                                    value="<?php echo $req->desckey; ?>" size="20" />
                         </span>
                     </td>
@@ -833,7 +834,7 @@ function az_display_index_dialog($req) {
                     <th scope="row"><label for="cols">Number of columns</label></th>
                     <td>
                         <select name="cols" style="float: left; width: 50px;">
-                            <?php az_add_columns($req->cols); ?> 
+                            <?php az_add_columns($req->cols); ?>
                         </select>
                     </td>
                 </tr>
@@ -844,9 +845,9 @@ function az_display_index_dialog($req) {
                             <li style="padding-top:5px;padding-bottom:5px;font-weight:bold;font-style:italic">
                                 Standard Options:
                             </li>
-                            <?php 
+                            <?php
                             // Indent any option that starts with the name of the previous option in the list.
-                            // (Lazy way to achieve some nice formatting of the options checkboxes :)                            
+                            // (Lazy way to achieve some nice formatting of the options checkboxes :)
                             $options = az_get_options();
                             $prevoption = "noop";
                             $optindex = 0;
@@ -857,11 +858,11 @@ function az_display_index_dialog($req) {
                                     $padleft = 25;
                                     $prevoption = $option;
                                 }
-                                if (++$optindex == AZ_ADVANCED_OPTIONS) { ?>  
+                                if (++$optindex == AZ_ADVANCED_OPTIONS) { ?>
                                     <li style="padding-top:10px;padding-bottom:5px;font-weight:bold;;font-style:italic">
                                         Advanced Options: (handle with care)
                                     </li>
-                                <?php } elseif ($optindex == AZ_NLS_OPTIONS) { ?>  
+                                <?php } elseif ($optindex == AZ_NLS_OPTIONS) { ?>
                                     <li style="padding-top:10px;padding-bottom:5px;font-weight:bold;;font-style:italic">
                                         National Language Support:
                                     </li>
@@ -875,7 +876,7 @@ function az_display_index_dialog($req) {
                     </td>
                 </tr>
                 <tr class="form-field" id="headsep-row">
-                    <th scope="row"><label for="headsep" id="headsep-head">Heading seperator</label></th>  
+                    <th scope="row"><label for="headsep" id="headsep-head">Heading seperator</label></th>
                     <td>
                         <input name="headsep" id="headsep" type="text" value="<?php echo $req->headsep; ?>" size="40" />
                         <br/>This string of characters will be inserted between headings and subheadings.&nbsp;
@@ -883,34 +884,34 @@ function az_display_index_dialog($req) {
                     </td>
                 </tr>
                 <tr class="form-field" id="perpage-row">
-                    <th scope="row"><label for="perpage" id="perpage-head">Number of items per page</label></th>  
+                    <th scope="row"><label for="perpage" id="perpage-head">Number of items per page</label></th>
                     <td>
                         <input name="perpage" id="perpage" type="text" value="<?php echo $req->perpage; ?>" size="10" />
                     </td>
                 </tr>
                 <tr class="form-field" id="ignorechars-row">
-                    <th scope="row"><label for="ignorechars" id="ignorechars-head">Ignore these characters when sorting</label></th>  
+                    <th scope="row"><label for="ignorechars" id="ignorechars-head">Ignore these characters when sorting</label></th>
                     <td>
-                        <input name="ignorechars" id="ignorechars" type="text" 
+                        <input name="ignorechars" id="ignorechars" type="text"
                                value="<?php echo (empty($req->ignorechars) ? '&quot;\'' : $req->ignorechars); ?>" size="20" />
                         <br/>Enter any characters at the start of headings that you want ignored while the index is sorted.&nbsp;
                              The default (when the option is selected) is single and double quote characters.
                     </td>
                 </tr>
                 <tr class="form-field" id="nlsequiv-row">
-                    <th scope="row"><label for="nlsequiv" id="nlsequiv-head">Language table used for grouping index items</label></th>  
+                    <th scope="row"><label for="nlsequiv" id="nlsequiv-head">Language table used for grouping index items</label></th>
                     <td>
                         <select id="nlsequiv" name="nlsequiv" style="width:15em">
-                            <?php foreach ($language as $lang) { ?> 
+                            <?php foreach ($language as $lang) { ?>
                                 <option value="<?php echo $lang; ?>"<?php if (!strcmp($lang, $req->nlsequiv)) echo ' selected '; ?>><?php echo $lang; ?></option>
-                            <?php } ?>                           
+                            <?php } ?>
                         </select>
                         <br/>If your index is being sorted correctly, but the items are not grouped together the way they should be (e.g. for Swedish or Hungarian indexes),
-                        then you may be able to select a more suitable language table for your index from this list.  
+                        then you may be able to select a more suitable language table for your index from this list.
                     </td>
                 </tr>
                 <tr class="form-field" id="nlslocale-row">
-                    <th scope="row"><label for="nlslocale" id="nlslocale-head">Locale used for sorting index</label></th>  
+                    <th scope="row"><label for="nlslocale" id="nlslocale-head">Locale used for sorting index</label></th>
                     <td>
                         <input name="nlslocale" id="nlslocale" type="text" value="<?php echo $req->nlslocale; ?>" size="20" />
                         <br/>Enter the name of the NLS locale to be used when sorting the index.  You should only need to specify one if your index contains
@@ -919,41 +920,41 @@ function az_display_index_dialog($req) {
                     </td>
                 </tr>
                 <tr class="form-field" id="customlinks-row">
-                    <th scope="row"><label for="customlinks" id="customlinks-head">Customized alphabetical links:</label></th>  
+                    <th scope="row"><label for="customlinks" id="customlinks-head">Customized alphabetical links:</label></th>
                     <td>
                         <input name="customlinks" id="customlinks" type="text" value="<?php echo empty($req->customlinks) ? AZ_INDEXCHARS : $req->customlinks; ?>" size="80" />
-                        <br/>This is the list of characters you want to appear in the alphabetical links at the top of the page.  
-                        You can add or remove characters from the list (e.g. accented characters), but they <b>all must appear in the order in which the index is sorted</b>.  
-                        This is useful if you want to display non-English alphanumeric characters in your index or if you are using a custom sort function. 
+                        <br/>This is the list of characters you want to appear in the alphabetical links at the top of the page.
+                        You can add or remove characters from the list (e.g. accented characters), but they <b>all must appear in the order in which the index is sorted</b>.
+                        This is useful if you want to display non-English alphanumeric characters in your index or if you are using a custom sort function.
                     </td>
                 </tr>
                 <tr class="form-field" id="customsort-row">
-                    <th scope="row"><label for="customsort" id="customsort-head">Custom comparison function</label></th>  
+                    <th scope="row"><label for="customsort" id="customsort-head">Custom comparison function</label></th>
                     <td>
                         <input name="customsort" id="customsort" type="text" value="<?php echo $req->customsort; ?>" size="40" />
-                        <br/>Enter the name of the comparison function to be used in the custom sort -- e.g. <em>my_numeric_compare</em>  
-                        <br/><br/>NOTE: The function must have the following signature: 
-                        <br/><code>&nbsp;&nbsp;&nbsp;&nbsp;function &lt;name&gt;(&lt;item1&gt;, &lt;item2&gt;)</code> 
-                        <br/>where &lt;item1&gt; and &lt;item2&gt; are arrays with the named fields: 'head', 'subhead', and 'desc'.  
-                             The function should return less than zero, zero, or greater than zero depending on whether the first item comes before, equal to, or after the second. For example to sort item headings in numerical order: 
+                        <br/>Enter the name of the comparison function to be used in the custom sort -- e.g. <em>my_numeric_compare</em>
+                        <br/><br/>NOTE: The function must have the following signature:
+                        <br/><code>&nbsp;&nbsp;&nbsp;&nbsp;function &lt;name&gt;(&lt;item1&gt;, &lt;item2&gt;)</code>
+                        <br/>where &lt;item1&gt; and &lt;item2&gt; are arrays with the named fields: 'head', 'subhead', and 'desc'.
+                             The function should return less than zero, zero, or greater than zero depending on whether the first item comes before, equal to, or after the second. For example to sort item headings in numerical order:
                         <br/><code>&nbsp;&nbsp;&nbsp;&nbsp;function my_numeric_compare($item1, $item2) {
                         <br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (intval($item1['head']) - intval($item2['head']));
                         <br/>&nbsp;&nbsp;&nbsp;&nbsp;}</code>
-                        <br/>Make sure to add your custom function to the WordPress code base.  One good place to put it is functions.php in your current theme. 
+                        <br/>Make sure to add your custom function to the WordPress code base.  One good place to put it is functions.php in your current theme.
                     </td>
                 </tr>
                 <tr class="form-field" id="customcss-row">
-                    <th scope="row"><label for="customcss" id="customcss-head">Custom stylesheets</label></th>  
+                    <th scope="row"><label for="customcss" id="customcss-head">Custom stylesheets</label></th>
                     <td>
                         <ul style="list-style:none;padding:0;float:left">
                             <li><label for="custom-single">Stylesheet for ungrouped index items:</label></li>
                             <li><textarea id="custom-single" name="custom-single" rows="8" cols="80"><?php echo az_get_stylesheet('custom-css', 0, $req->csssingle); ?></textarea></li>
-                            <li>To reset the stylesheet to the default value, delete all of it, save the index, and then edit the index again.</li>  
-                        </ul>  
+                            <li>To reset the stylesheet to the default value, delete all of it, save the index, and then edit the index again.</li>
+                        </ul>
                         <ul style="list-style:none;padding:0;float:left">
                             <li><label for="custom-group">Stylesheet for grouped index items:</label></li>
                             <li><textarea id="custom-group" name="custom-group" rows="8" cols="80"><?php echo az_get_stylesheet('custom-css,group-subhead', 0, $req->cssgroup); ?></textarea></li>
-                            <li>To reset the stylesheet to the default value, delete all of it, save the index, and then edit the index again.</li>  
+                            <li>To reset the stylesheet to the default value, delete all of it, save the index, and then edit the index again.</li>
                         </ul>
                     </td>
                 </tr>
@@ -965,18 +966,18 @@ function az_display_index_dialog($req) {
                     <input type="hidden" name="action" value="az-update-index" />
                     <input type="submit" class="button" name="submit" value="Save Changes" />&nbsp;
                     <input type="submit" class="button" name="cancel" value="Cancel" />
-                <?php } else { ?>                    
+                <?php } else { ?>
                     <?php wp_nonce_field('az_plugin_add'); ?>
                     <input type="hidden" name="action" value="az-add-index" />
                     <input type="submit" class="button" name="submit" value="Add Index" />&nbsp;
                     <input type="submit" class="button" name="cancel" value="Cancel" />
-                <?php } ?>                    
+                <?php } ?>
             </p>
         </form>
         <script type="text/javascript">
-        
+
             // This function controls the hiding/showing, enabling/disabling
-            // of selected items in the admin panel. 
+            // of selected items in the admin panel.
             function selchanged(field, value) {
                 if (field == 'group-subhead') {
                     value = value == 'none' ? 'disable' : 'enable';
@@ -997,20 +998,20 @@ function az_display_index_dialog($req) {
                 }
                 if (value == 'custom' || value == 'tags' || value == 'cats' || value == 'checked') {
                     document.getElementById(field).className='';
-                } else if (value == 'disable') { 
+                } else if (value == 'disable') {
                     document.getElementById(field).disabled = true;
                     document.getElementById(field).parentNode.className = 'az-disabled';
-                } else if (value == 'enable') { 
+                } else if (value == 'enable') {
                     document.getElementById(field).disabled = false;
                     document.getElementById(field).parentNode.className = '';
                 } else if (value == 'uncheck') {
                     document.getElementById(field).checked = false;
-                } else { 
+                } else {
                     document.getElementById(field).className='az-hide';
                 }
             }
-            
-            // Set the correct initial states of the dynamic part of the form. 
+
+            // Set the correct initial states of the dynamic part of the form.
             selchanged('head-key-field', document.getElementById('head').value);
             selchanged('subhead-key-field', document.getElementById('subhead').value);
             selchanged('desc-key-field', document.getElementById('desc').value);
@@ -1022,19 +1023,19 @@ function az_display_index_dialog($req) {
             selchanged('customcss-row', document.getElementById('custom-css').checked ? 'checked' : '');
             selchanged('customsort-row', document.getElementById('custom-sort').checked ? 'checked' : '');
             selchanged('customlinks-row', document.getElementById('custom-links').checked ? 'checked' : '');
-            selchanged('include-pages-exclude-posts', document.getElementById('include-pages').checked ? 'enable' : 'disable');     
-            selchanged('multipage-links-above', document.getElementById('multipage').checked ? 'enable' : 'disable');     
+            selchanged('include-pages-exclude-posts', document.getElementById('include-pages').checked ? 'enable' : 'disable');
+            selchanged('multipage-links-above', document.getElementById('multipage').checked ? 'enable' : 'disable');
             selchanged('multipage-links-below', document.getElementById('multipage').checked ? 'enable' : 'disable');
-            selchanged('alpha-head-page', document.getElementById('alpha-head').checked ? 'enable' : 'disable');     
+            selchanged('alpha-head-page', document.getElementById('alpha-head').checked ? 'enable' : 'disable');
             selchanged('alpha-head-col', document.getElementById('alpha-head').checked ? 'enable' : 'disable');
-            selchanged('alpha-links-unused', document.getElementById('alpha-links').checked ? 'enable' : 'disable');     
+            selchanged('alpha-links-unused', document.getElementById('alpha-links').checked ? 'enable' : 'disable');
             selchanged('alpha-links-two-rows', document.getElementById('alpha-links').checked ? 'enable' : 'disable');
             selchanged('custom-css-striping', document.getElementById('custom-css').checked ? 'enable' : 'disable');
             selchanged('nls-locale', document.getElementById('nls').checked ? 'enable' : 'disable');
             selchanged('nls-equiv', document.getElementById('nls').checked ? 'enable' : 'disable');
             dropdown = document.getElementById('subhead');
             selchanged('group-subhead', dropdown[dropdown.selectedIndex].value);
-// TODO Add back in when FF 3.0 bug is fixed. 
+// TODO Add back in when FF 3.0 bug is fixed.
 //          selchanged('custom-single', document.getElementById('group-subhead').checked ? 'disable' : 'enable');
 //          selchanged('custom-group', document.getElementById('group-subhead').checked ? 'enable' : 'disable');
             selchanged('custom-links', document.getElementById('alpha-links').checked ? 'enable' : 'disable');
@@ -1074,7 +1075,7 @@ function az_add_option($name, $title, $sel) {
 }
 
 /**
- * Add the numeric options within the column selection box, and set one as selected, if necessary. 
+ * Add the numeric options within the column selection box, and set one as selected, if necessary.
  *
  * @param $sel option to be selected
  */
@@ -1103,7 +1104,7 @@ function az_check_value($value, $sel) {
    }
    if ($value == 'multipage') {
        $output .= 'onclick="selchanged(\'perpage-row\', this.checked ? \'checked\' : \'\');'
-                          .'selchanged(\'multipage-links-above\', this.checked ? \'enable\' : \'disable\');'     
+                          .'selchanged(\'multipage-links-above\', this.checked ? \'enable\' : \'disable\');'
                           .'selchanged(\'multipage-links-below\', this.checked ? \'enable\' : \'disable\');" ';
    }
    if ($value == 'ignore-chars') {
@@ -1115,7 +1116,7 @@ function az_check_value($value, $sel) {
    }
    if ($value == 'alpha-links') {
        $output .= 'onclick="selchanged(\'alpha-links-unused\', this.checked ? \'enable\' : \'disable\');'
-                          .'selchanged(\'alpha-links-two-rows\', this.checked ? \'enable\' : \'disable\');'     
+                          .'selchanged(\'alpha-links-two-rows\', this.checked ? \'enable\' : \'disable\');'
                           .'selchanged(\'custom-links\', this.checked ? \'enable\' : \'disable\');" ';
    }
    if ($value == 'include-pages') {
@@ -1123,7 +1124,7 @@ function az_check_value($value, $sel) {
    }
    if ($value == 'nls') {
        $output .= 'onclick="selchanged(\'nls-locale\', this.checked ? \'enable\' : \'disable\');'
-                          .'selchanged(\'nls-equiv\', this.checked ? \'enable\' : \'disable\');'     
+                          .'selchanged(\'nls-equiv\', this.checked ? \'enable\' : \'disable\');'
                           .'selchanged(\'nlslocale-row\', this.checked && document.getElementById(\'nls-locale\').checked ? \'checked\' : \'\');'
                           .'selchanged(\'nlsequiv-row\', this.checked && document.getElementById(\'nls-equiv\').checked ? \'checked\' : \'\');" ';
    }
@@ -1174,35 +1175,35 @@ function az_get_admin_error_message($id) {
     global $wpdb;
     $error = 'AZINDEX_PLUGIN_ERROR: ';
     switch ($id) {
-        case 'database-not-found': 
+        case 'database-not-found':
             $error .= '101 - The required AZIndex database table - '.AZ_TABLE.' - does not exist. '
                      .'Please deactivate then re-activate the AZIndex plugin to correct the problem.';
                      break;
-        case 'version-out-of-date': 
-            $error .= '102 - The AZIndex database table is out-of-date with this version of the plugin. '  
+        case 'version-out-of-date':
+            $error .= '102 - The AZIndex database table is out-of-date with this version of the plugin. '
                      .'Please deactivate then re-activate the AZIndex plugin to upgrade the database. '
                      .'All existing index settings in the AZIndex table will be saved.';
             break;
-        case 'version-incompatible': 
-            $error .= '103 - The AZIndex database table is incompatible with this version of the plugin. '  
+        case 'version-incompatible':
+            $error .= '103 - The AZIndex database table is incompatible with this version of the plugin. '
                      .'Please UNINSTALL the plugin using the link below then reactive the AZIndex plugin to rectify the problem. '
                      .'All existing index settings in the AZIndex table will be lost.';
             break;
-        case 'rename-table-failed': 
-            $error .= '201 - The AZIndex plugin was unable to finish upgrading your existing index settings. ';  
+        case 'rename-table-failed':
+            $error .= '201 - The AZIndex plugin was unable to finish upgrading your existing index settings. ';
             break;
-        case 'create-table-failed': 
+        case 'create-table-failed':
             $error .= '202 - The AZIndex plugin was unable to create the new settings database table while upgrading to the latest version. ';
-            break;  
-        case 'fresh-create-table-failed': 
-            $error .= '203 - The AZIndex plugin was unable to create the new settings database table.';  
+            break;
+        case 'fresh-create-table-failed':
+            $error .= '203 - The AZIndex plugin was unable to create the new settings database table.';
             break;
         case 'upgrade-table-failed':
             $error .= '204 - The AZIndex plugin was unable to upgrade the new settings while upgrading to the latest version. ';
-            break;  
+            break;
     }
-    
-    // If this is an upgrade error, then display more information to help assure the user 
+
+    // If this is an upgrade error, then display more information to help assure the user
     // that no data has been lost, and to point them to somewhere where they can get some help.
     if (strpos($id, 'table-failed') !== false) {
         $error = '<p>'.$error.'</p>'
@@ -1220,8 +1221,8 @@ function az_get_admin_error_message($id) {
 }
 
 /**
- * Action hook used to display an error message on the plugins page 
- * if something has gone wrong with the database during the install or 
+ * Action hook used to display an error message on the plugins page
+ * if something has gone wrong with the database during the install or
  * upgrade.
  */
 function az_admin_notices() {
@@ -1235,14 +1236,14 @@ function az_admin_notices() {
         echo '<div class="error" style="padding:10px 10px">';
         echo '<strong>Fatal AZIndex Plugin Upgrade Error</strong>';
         echo '<p>'.$message.'</p>';
-        
+
         if (function_exists('deactivate_plugins') ) {
             deactivate_plugins( AZ_PLUGIN_FILE);
             echo '<p>The AZIndex plugin has been deactivated.</p>';
         }
         echo '</div>';
     }
-    
+
     // Remember to delete the option so the message is not shown again.
     delete_option('az_plugin_error');
 }
@@ -1261,27 +1262,27 @@ function az_get_included($options) {
 }
 
 /**
- * htmlspecialchars_decode is a >= PHP5.1-only function.  This version of the function 
- * will allow the plugin to work on PHP4 installations. 
+ * htmlspecialchars_decode is a >= PHP5.1-only function.  This version of the function
+ * will allow the plugin to work on PHP4 installations.
  */
 function az_htmlspecialchars_decode($string, $style=ENT_COMPAT) {
     if (floatval(phpversion()) >= 5.1) {
-        $string = htmlspecialchars_decode($string, $style); 
+        $string = htmlspecialchars_decode($string, $style);
     } else {
         $translation = array_flip(get_html_translation_table(HTML_SPECIALCHARS,$style));
-        if ($style === ENT_QUOTES) { 
-            $translation['&#039;'] = '\''; 
+        if ($style === ENT_QUOTES) {
+            $translation['&#039;'] = '\'';
         }
         $string = strtr($string,$translation);
-    }     
-    return $string;  
+    }
+    return $string;
 }
 
 /**
  * Class containing all the data sent in a POST or GET message or
  * an entry retrieved from the indexes database.
  */
-class az_request { 
+class az_request {
     var $action;       // Current action to be processed
     var $sortby;       // Set if the index table is to be sorted
     var $name;         // Name of the index
@@ -1300,8 +1301,8 @@ class az_request {
     var $cols;         // Number of columns on the index page
     var $headsep;      // String separating headings from the subheadings
     var $perpage;      // Number of items per page (if multipage option selected
-    var $ignorechars;  // Characters to be ignored at the start of headings when they are being sorted 
-    var $nlslocale;    // Locale to be used for sorting the index 
+    var $ignorechars;  // Characters to be ignored at the start of headings when they are being sorted
+    var $nlslocale;    // Locale to be used for sorting the index
     var $nlsequiv;     // Collation equivalence table to be used for grouping the index
     var $csssingle;    // Custom CSS for single index items
     var $cssgroup;     // Custom CSS for grouped index items
@@ -1311,24 +1312,22 @@ class az_request {
     var $itemcache;    // Item cache
     var $linkcache;    // Link cache
     var $info_message; // Informational message to the output to the user
-    var $error_field = array();    // Input fields currently in error 
+    var $error_field = array();    // Input fields currently in error
     var $error_messages = array(); // Error message to be output to the admin user
 
     /**
-     * Constructor for class. Initialize the action instance variable immediately. 
+     * Constructor for class. Initialize the action instance variable immediately.
      */
     function az_request() {
         az_trace('fn:az_request');
-        $this->action = $_GET['action'];
+        $this->action = !empty($_GET['action']) ? $_POST['options'] : '';
         if (empty($this->action)) {
-            if (empty($_POST['cancel'])) {
-                $this->action = $_POST['action'];
-            } else {
+            if (empty($_POST['cancel']) && empty($_GET['action'])) {
                 $this->action = 'cancel';
             }
         }
     }
-    
+
     /**
      * Populate the instance data for the class using the GET request parameters.
      * Also generate the appropriate error messages should problems be found.
@@ -1408,7 +1407,7 @@ class az_request {
         }
         return $ids;
     }
-    
+
     /**
      * Populate the instance data for the class using the GET request parameters
      * and, where necessary, the selected entry in the index database table.
@@ -1418,19 +1417,19 @@ class az_request {
         $this->id = intval($_GET['indexid']);
         $this->name = $_GET['name'];
         $this->info_message = intval($_GET['msg']);
-        
+
         if ($this->action == 'az-edit-index') {
             $this->set_vars_from_table($this->id);
         } else if ($this->action == 'az-sort-indexes') {
             $this->sortby = $_GET['by'];
-        } 
+        }
     }
 
     /**
      * Fetch the settings for the current index from the database.
      *
      * @param $id id of index page
-     * @return number of indexes found (i.e. if zero, then there is no index) 
+     * @return number of indexes found (i.e. if zero, then there is no index)
      */
     function set_vars_from_table($id) {
         az_trace('fn:set_vars_from_table');
@@ -1445,7 +1444,7 @@ class az_request {
      * Fetch the settings for the supplied index object
      *
      * @param $id id of index page
-     * @return number of indexes found (i.e. if zero, then there is no index) 
+     * @return number of indexes found (i.e. if zero, then there is no index)
      */
     function set_vars_from_index($index) {
         az_trace('fn:set_vars_from_index');
@@ -1456,7 +1455,7 @@ class az_request {
         $this->tagids = $index->tags;
         $this->tags = az_get_term_names($this->tagids, 'post_tag');
         $this->head = $index->heading;
-        
+
         if (az_begins_with($this->head, 'custom:') || az_begins_with($this->head, 'tags:') || az_begins_with($this->head, 'cats:')) {
             $this->head = substr($index->heading, 0, strpos($index->heading, ':'));
             $this->headkey = substr($index->heading, strpos($index->heading, ':') + 1);
@@ -1469,7 +1468,7 @@ class az_request {
                 $this->headkey = az_get_term_names($this->headkey, 'post_tag');
             }
         }
-        $this->subhead = $index->subheading; 
+        $this->subhead = $index->subheading;
         if (az_begins_with($this->subhead, 'custom:')) {
             $this->subhead = 'custom';
             $this->subheadkey = substr($index->subheading, strpos($index->subheading, ':') + 1);
@@ -1480,11 +1479,11 @@ class az_request {
             $this->desckey = substr($index->description,  strpos($index->description, ':') + 1);
         }
         $this->cols = $index->cols;
-        $this->headsep = $index->headingseparator; 
-        $this->perpage = $index->itemsperpage; 
-        $this->ignorechars = $index->ignorechars; 
-        $this->nlslocale = $index->nlslocale; 
-        $this->nlsequiv = $index->nlsequiv; 
+        $this->headsep = $index->headingseparator;
+        $this->perpage = $index->itemsperpage;
+        $this->ignorechars = $index->ignorechars;
+        $this->nlslocale = $index->nlslocale;
+        $this->nlsequiv = $index->nlsequiv;
         $this->csssingle = $index->customcsssingle;
         $this->cssgroup = $index->customcssgroup;
         $this->customlinks = $index->customlinks;
@@ -1493,7 +1492,7 @@ class az_request {
         $this->itemcache = $index->itemcache;
         $this->linkcache = $index->linkcache;
     }
-    
+
     /**
      * Escape all the strings that might contain illegal characters,
      * ready for insertion into the wordpress database.
@@ -1509,17 +1508,17 @@ class az_request {
 
     /**
      * Validate the terms (categories/tags) by fetching ids.  A term can be prefixed by a ~ character
-     * which notes that the search should exclude posts with that term.  
+     * which notes that the search should exclude posts with that term.
      *
      * @param $term_string string of term names/slugs
      * @param $taxonomy type of term
-     * @return string of valid term ids 
+     * @return string of valid term ids
      */
     function validate_terms($term_string, $taxonomy, $excludes_only = false) {
         az_trace('fn:validate_terms: term_string = '.$term_string.", taxonomy = ".$taxonomy);
-        
+
         $items = preg_split('/([,]+)/', $term_string, -1, PREG_SPLIT_DELIM_CAPTURE);
-        
+
         foreach ($items as $item) {
             $item = az_htmlspecialchars_decode(trim($item));
             if ($item == ',') {
@@ -1587,8 +1586,8 @@ function az_trace($output, $array = 0) {
 }
 
 /**
- * DEBUG function for println out information on the web page. 
- * Does not work in cases where the webpage is not being generated. 
+ * DEBUG function for println out information on the web page.
+ * Does not work in cases where the webpage is not being generated.
  *
  * @param $value string to be output.
  */

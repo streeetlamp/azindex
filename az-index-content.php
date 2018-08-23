@@ -17,7 +17,7 @@
 */
 
 /**
- * Called when [az-index] is encountered in a blog page.  This is the 
+ * Called when [az-index] is encountered in a blog page.  This is the
  * main entry point for displaying the index.
  *
  * @param $content [az-index]
@@ -35,7 +35,7 @@ function az_insert_index($params) {
 }
 
 /**
- * Build up the index page from the definition of the index and 
+ * Build up the index page from the definition of the index and
  * the contents of the included posts.
  *
  * @return index content to be displayed or an error message if the index doesn't exist
@@ -48,14 +48,18 @@ function az_get_index_content($indexid) {
         if ($count > 0) {
             global $post;
             load_plugin_textdomain('azindex', false, 'azindex');
-            $currentpage = az_is_set($index->options, 'multipage') ? intval($_GET['pgno']) : 0;
+            $getPgno = null;
+            if (empty($_GET['pgno']) || !isset($_GET['pgno'])) {
+                $getPgno = 0;
+            }
+            $currentpage = az_is_set($index->options, 'multipage') ? intval($getPgno) : 0;
         	if ($currentpage > 0) {
                 $currentpage--;
             }
         	$cache = az_cache_get($index, $post->ID, $currentpage);
         	$content = az_format_index($index, $cache->items, $cache->alphalinks, $cache->pageno, $cache->pagecount, az_current_url());
         } else if ($count !== false) {
-            $content = az_error_message('invalid_index', $indexid); 
+            $content = az_error_message('invalid_index', $indexid);
         }
     } else {
         $content = az_error_message('invalid_shortcode');
@@ -63,15 +67,15 @@ function az_get_index_content($indexid) {
     return $content;
 }
 
-/**  
- * Format the index page to be displayed. 
+/**
+ * Format the index page to be displayed.
  *
  * @param unknown_type $items items in the index
  * @return the formatted index page to be displayed
  */
 function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, $pagelink) {
     //az_trace('fn:format_content: options = '.$index->options);
-    
+
     // Add carriage returns to the start of each entry to make it easier to read the source HTML.
     $cr = chr(10);
     $idindex = $index->id;
@@ -90,8 +94,8 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
     $indexfilter = 'azindex_display_index';
     $itemfilter = 'azindex_display_item';
     $cr = chr(10);
-    
-    // Fetch the correct stylesheet for the currently set options. 
+
+    // Fetch the correct stylesheet for the currently set options.
     $stylesheet = az_get_stylesheet($options, $index->cols, $grouped ? $index->cssgroup : $index->csssingle);
 
     $output = '';
@@ -101,32 +105,32 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
         if (empty($index->headsep)) {
             $index->headsep = ' - ';
         }
-        
+
         // If this is a multipage index then set up the count of items on a page and the page links.
         if ($multipage && $index->perpage > 0) {
             $pagelinks = az_format_pagelinks($idindex, $currentpage, $pagecount, $pagelink, $options);
         } else {
             $index->perpage = count($items);
         }
-        
+
         // If this is a multipage index and we're not on the first page
         // then the array contains one extra item at the beginning which
         // is the last item on the previous page - this is to ensure we
-        // format and link the first item on this page correctly. 
+        // format and link the first item on this page correctly.
         $first = ($currentpage > 0) ? 1 : 0;
         $last = $first + $index->perpage;
-        
+
         // Calculate the number of items in each column.
         // Note: no account is taken for the size of the items, so
         // the columns will probably be uneven to some degree.
         $incol = ceil($index->perpage / $index->cols);
-        
+
         // Fetch the previous heading if were not starting from the beginning.
-        if ($first > 0) { 
+        if ($first > 0) {
             $prevhead = $items[$first - 1]['sort-head'];
             $previnitial = $items[$first - 1]['initial'];
         }
-        for ($col = 0; $col < $index->cols; $col++) {                        
+        for ($col = 0; $col < $index->cols; $col++) {
             $output .= '<div class="azindex"><ul>';
             $odd = false;
             $curitem = -1;
@@ -139,7 +143,7 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
                 if ($curitem == $last - 1) {
                     break;
                 }
-                
+
                 // Fetch the next item.
                 $curitem = $first + $col * $incol + $i;
                 $item = $items[$curitem];
@@ -159,14 +163,14 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
                         if ($addspaces && $curitem > $first && $i > 0) {
                             $spacer = '<li class="spacer"></li>';
                         }
-                    } else if ($alphahead) { 
+                    } else if ($alphahead) {
                         if ($alphaheadcol && $i == 0 || $alphaheadpage && $curitem == $first) {
                             $heading = '<li><h2>'.$initial.'<span class="azcont">&nbsp;&nbsp;('.__('continued', 'azindex').')</span></h2></li>'.$cr;
                         }
                     }
 
                     // Output the index item.
-                    
+
                     // Check to see if the items with the same heading are grouped together.
                     // Note: if at the top of a column, always output the heading.
                     $link = get_permalink($item['id']);
@@ -192,12 +196,12 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
                         }
                     } else {
                         $output .= $spacer.$heading.'<li'.$charlink.($odd ? ' class="azalt"' : '').'>';
-                        
+
                         // Call any display item filters
                         if (has_filter($itemfilter)) {
                             $item = apply_filters($itemfilter, $item, $idindex);
                         }
-                        
+
                         if (!empty($item['output'])) {
                             // If the filter passed us back some HTML, then use it.
                             $output .= $item['output'];
@@ -237,7 +241,7 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
             }
             $output .= '</ul></div>';
         }
-        
+
         // Reset the block formatting.
         $output .= '<div style="clear:both;"></div>';
 
@@ -258,7 +262,7 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
                 $output .= $pagelinks.$linkspacer;
             }
         }
-        
+
         // Finally, piece together the whole index.
         $output = '<div id="'.$anchor.'">'.$stylesheet.$output.'</div>';
 
@@ -266,14 +270,14 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
         if (has_filter($indexfilter)) {
             $output = apply_filters($indexfilter, $output, $idindex, $items, $first, $index->perpage);
         }
-        
+
         $output = $comment.$output;
     }
     return $output;
 }
 
 /**
- * Add links to the top of the index page(s), if required.  Note that the order in which 
+ * Add links to the top of the index page(s), if required.  Note that the order in which
  * the links are added is the order of the charactes in the constant AZ_INDEXCHARS.  Any
  * character links which are not in this constant will be added to the front of the list.
  *
@@ -282,10 +286,10 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
  * @param $pagecount the number of pages in the index
  * @param $pagelink the URL of the main index page
  * @param $options specified options
- * @return the output containing the index. 
+ * @return the output containing the index.
  */
 function az_format_alphalinks($idindex, $indexchars, $currentpage, $pagecount, $pagelink, $customlinks, $options) {
-    
+
     $is_mb = az_is_set($options, 'nls') && function_exists('mb_strpos');
     $tworows = az_is_set($options, 'alpha-links-two-rows');
     $chars =  az_is_set($options, 'custom-links') ? $customlinks : AZ_INDEXCHARS;
@@ -300,34 +304,34 @@ function az_format_alphalinks($idindex, $indexchars, $currentpage, $pagecount, $
 
     // First build an array of all the link information, if necessary.
     if ($add_unused || has_filter($alphafilter)) {
-        
+
         // Set up an array with the included characters as keys.
         // Note: the insertion order is the order maintained throughout,
-        // and is the correct sorted alphabetical order. 
+        // and is the correct sorted alphabetical order.
         for ($i = 0; $i < az_strlen($chars, $is_mb); $i++) {
             $char = az_substr($chars, $i, 1, $is_mb);
             $links[az_substr($chars, $i, 1, $is_mb)] = false;
         }
-        
+
         // Saved the originally specified number of links
         $link_count = count($links);
-        
+
         // Now add the link items to the array for the characters that exist.
         // Note that all links are added, even those which are not in the
         // character list supplied by the user (these are tacked on to the
-        // end of the array). 
+        // end of the array).
         foreach ($indexchars as $item) {
             $links[$item['char']] = $item;
         }
     }
-    
+
     // Check to see if the unused characters are to be output along with the alphalinks.
     if ($add_unused) {
 
         // Calculate where to split the index, if necessary.
         $half = ($link_count - (count($links) - $link_count) * ($append ? -1 : 1)) / 2;
-        
-        // Now generate the output from the data in the array.        
+
+        // Now generate the output from the data in the array.
         $count = 0;
         foreach ($links as $char => $link) {
             $html = '';
@@ -337,7 +341,7 @@ function az_format_alphalinks($idindex, $indexchars, $currentpage, $pagecount, $
             } else if ($count > 0 && $count != $link_count && $count < count($links)) {
                 $html = $gap;
             }
-            if ($link !== false) {  
+            if ($link !== false) {
                 $pg = (!$paged || $link['page'] == $currentpage) ? '' : $pagelink.$pgno.($link['page'] + 1);
                 $html .= '<span class="azlink"><a href="'.$pg.'#char_'.bin2hex($char).'" title="'.$title.' '.$char.'">'.$char.'</a></span>';
             } else {
@@ -400,10 +404,10 @@ function az_format_pagelinks($idindex, $currentpage, $pagecount, $pagelink, $opt
     $title = __("Go to page", 'azindex');
     $anchor = '#azindex-'.$idindex;
     $cr = chr(10);
-        
+
     if ($pagecount > $maxpages) {
         $output .= '<span class="azlinknav '.($currentpage > 0 ? '"><a href="'.$pagelink.$pgno.$pgdn.$anchor.'" title="'.sprintf(__('Back %d pages', 'azindex'), $maxpages).'">&lt;&lt;</a>' : 'aznavdisabled">&lt;&lt;').'</span>&nbsp;';
-    } 
+    }
     $output .= '<span class="azlinknav '.($currentpage <= 0 ? 'aznavdisabled">&lt;' : '"><a href="'.$pagelink.$pgno.$currentpage.$anchor.'" title="'.__('Previous page', 'azindex').'">&lt;</a>').'</span>&nbsp;';
     $start = 0;
     $end = $pagecount;
@@ -422,7 +426,7 @@ function az_format_pagelinks($idindex, $currentpage, $pagecount, $pagelink, $opt
     if ($pagecount > $maxpages) {
         $output .= '&nbsp;<span class="azlinknav '.($currentpage < $pagecount - 1 ? '"><a href="'.$pagelink.$pgno.$pgup.$anchor.'" title="'.sprintf(__('Forward %d pages', 'azindex'), $maxpages).'">&gt;&gt;</a>' : 'aznavdisabled">&gt;&gt;').'</span>';
     }
-        
+
     $output = '<div class="azpagelinks">'.$output.'</div>'.$cr;
     if (has_filter($pagefilter)) {
         $output = apply_filters($pagefilter, $output, $idindex, $pagelink, $currentpage + 1, $pagecount, $anchor);
@@ -431,11 +435,11 @@ function az_format_pagelinks($idindex, $currentpage, $pagecount, $pagelink, $opt
 }
 
 /**
- * Get the stylesheet needed for the current style of index. 
+ * Get the stylesheet needed for the current style of index.
  *
  * @param $options specified options
  * @param $cols number of columns in the index.  If cols is zero, then
- *              we are fetching the stylesheet for the admin panel 
+ *              we are fetching the stylesheet for the admin panel
  * @return output containing the stylesheet
  */
 function az_get_stylesheet($options, $cols, $customcss) {
@@ -447,14 +451,14 @@ function az_get_stylesheet($options, $cols, $customcss) {
     if ($cols > 0) {
         // Adjust the width a little downwards to account for IE rounding errors.
         $output = '<style type="text/css">'.$cr;
-        $output .= '.azindex {width:'.(intval(100 / $cols) - 0.1).'%;float:left;}';    
+        $output .= '.azindex {width:'.(intval(100 / $cols) - 0.1).'%;float:left;}';
     }
 
     // If custom css is required, set it.
     if (az_is_set($options, 'custom-css')) {
-       $content = $customcss; 
+       $content = $customcss;
     }
-    
+
     if (empty($content)) {
         if (az_is_set($options, 'group-subhead')) {
             $content = '.azindex .head {font-weight:bold}'.$cr
@@ -462,13 +466,13 @@ function az_get_stylesheet($options, $cols, $customcss) {
                       .'.azindex .desc {clear:left; float:left; font-size:80%; padding-left:20px;}'.$cr
                       .'.azindex .head .azcont {font-size:90%;font-style:italic;}'.$cr
                       .'.azindex .subhead .azcont {font-size:90%;font-style:italic;}'.$cr;
-                      
+
         } else {
             $content = '.azindex .head {}'.$cr
                       .'.azindex .subhead {}'.$cr
                       .'.azindex .desc {float:left; font-size:80%; padding-left:10px;}'.$cr;
         }
-    
+
         $content .= '.azindex {padding:20px 0 20px 0}'.$cr
                    .'.azindex h2 { padding-top:0;margin-top:0}'.$cr
                    .'.azindex h2 .azcont {font-size:50%;font-style:italic;}'.$cr
@@ -482,7 +486,7 @@ function az_get_stylesheet($options, $cols, $customcss) {
     }
 
     $output .= $content;
-    
+
     if ($cols > 0) {
         $output .='</style>';
     }
@@ -515,8 +519,8 @@ function az_current_url() {
     if ($pos > 0) {
         $end = strpos($url, "&", $pos + 1);
         if (!$end) {
-            // The pgno is at the end of the url, just truncate it. 
-            $end = strlen($url); 
+            // The pgno is at the end of the url, just truncate it.
+            $end = strlen($url);
         } else {
             // The pgno is not the last parameter, so remove the pgno and the following & concatenator.
             $pos++;
@@ -528,16 +532,16 @@ function az_current_url() {
 }
 
 function az_error_message($id, $param = '', $blink = true) {
-    $output = '<div style="color:red">'; 
+    $output = '<div style="color:red">';
     switch ($id) {
-        case 'invalid_index': 
+        case 'invalid_index':
             $output .= '<br/>AZINDEX ERROR: There is no index with the id of "'.$param.'" available.';
-            break; 
-        case 'invalid_shortcode': 
+            break;
+        case 'invalid_shortcode':
             $output .= '<br/>AZINDEX ERROR: Invalid az-index short-code found. A non-zero <em>id</em> parameter must be specified.';
-            break; 
+            break;
     }
-    if ($blink) { 
+    if ($blink) {
         $output .= '<br/>Please notify blog/site administration of the problem.';
     }
     $output .= '<br/>(Message from the AZIndex plugin)<br/></div>';
@@ -601,7 +605,7 @@ function az_trim($str, $charlist='')
     } else {
         return az_ltrim(az_rtrim($str, $charlist), $charlist);
     }
-} 
+}
 
 function az_strpos($string, $chr, $is_multibyte) {
     return $is_multibyte ? mb_strpos($string, $chr, 0, "UTF-8") : strpos($string, $chr);
@@ -621,17 +625,17 @@ function az_strcoll($s1, $s2, $is_multibyte) {
 
 function utf8_char_replace($str) {
 
-    $utf8 = array(chr(0xe2).chr(0x80).chr(0x98), 
-                  chr(0xe2).chr(0x80).chr(0x99), 
-                  chr(0xe2).chr(0x80).chr(0x9c), 
+    $utf8 = array(chr(0xe2).chr(0x80).chr(0x98),
+                  chr(0xe2).chr(0x80).chr(0x99),
+                  chr(0xe2).chr(0x80).chr(0x9c),
                   chr(0xe2).chr(0x80).chr(0x9d),
                   chr(0xe2).chr(0x80).chr(0x9a),
                   chr(0xe2).chr(0x80).chr(0x9e),
                   chr(0xe2).chr(0x80).chr(0x93),
                   chr(0xe2).chr(0x80).chr(0x94),
                   chr(0xe2).chr(0x80).chr(0xa6));
-                   
-    $base = array("'", "'", '"', '"', "'", '"', '-', '-', '...');              
+
+    $base = array("'", "'", '"', '"', "'", '"', '-', '-', '...');
     $str = str_replace($utf8, $base, $str);
     return $str;
 }

@@ -27,7 +27,7 @@ add_action('check_ajax_referer', 'az_cache_check_custom');
 //add_action('wp_ajax_addmeta', 'az_cache_check');
 //add_action('edit_post', 'az_cache_check');
 //add_action('init', 'az_cache_check');
- 
+
 /**
  * Creates a new cached object for the specified index.
  *
@@ -54,12 +54,12 @@ function az_pending_delete($postid) {
 }
 
 /**
- * Main entry point for processing changed posts and pages.  Hooks into 
+ * Main entry point for processing changed posts and pages.  Hooks into
  * functions that modify posts and pages in some way call here so that
  * the posts can be added to the dirty list of all the indexes.  Note
  * that we have to filter out changes to revisions by checking the post_type/
  *
- * @param int $postid id of post changed 
+ * @param int $postid id of post changed
  */
 function az_cache_post_changed($postid) {
     global $az_deleted_post_type;
@@ -82,7 +82,7 @@ function az_cache_post_changed($postid) {
  * There is no easy way to capture changes to custom fields that are done via AJAX calls.
  * This callback is called *before* any changes are made, so while we can log that a
  * change has been made (which we do) there is no way to find out what the change is
- * and whether it affects the index or not.  There is no consistency in the way the 
+ * and whether it affects the index or not.  There is no consistency in the way the
  * postid is passed on the AJAX call, which is the reason for the convoluted code.
  *
  * @param object $action - not used
@@ -100,11 +100,11 @@ function az_cache_check_custom($action) {
     } else if ($action == 'delete-meta') {
         $idmeta = $_REQUEST['id'];
     }
-    
+
     if (!empty($idmeta)) {
         $postid = $wpdb->get_var("SELECT post_id FROM $wpdb->postmeta WHERE meta_id = '$idmeta'");
     }
-    
+
     if (!empty($postid)) {
         $post = get_post($postid);
         if ($post->post_type == 'post' || $post->post_type == 'page') {
@@ -126,7 +126,7 @@ function az_get_dirty_posts() {
     //az_trace('az_get_dirty_posts');
     $dirtyposts = get_option("az_cache_dirty");
     if (is_serialized($dirtyposts)) {
-        $dirtyposts = unserialize($dirtyposts); 
+        $dirtyposts = unserialize($dirtyposts);
     }
     return $dirtyposts;
 }
@@ -141,7 +141,7 @@ function az_add_dirty_post($postid) {
     $dirtyposts = az_get_dirty_posts();
     // Only process the dirty post if its the same post as before if
     // a quarter of a second or more has elapse, otherwise we will
-    // process the same changes multiple time. 
+    // process the same changes multiple time.
     $elapsed = az_microtime_diff($dirtyposts[0][1]);
     $elapsed = ($postid == $dirtyposts[0][0]) ? $elapsed : 1;
     //az_trace("elapsed time : ".$elapsed);
@@ -156,8 +156,8 @@ function az_add_dirty_post($postid) {
  	                                                     && !az_is_set($index->options, "disable-cache")) {
  	            //az_trace("az_add_dirty_post: adding postid $postid to the dirty list of $index->idindex");
                 $dirtyposts[$index->idindex][] = intval($postid);
- 	        } 
-            // The blog may be using an HTML cache (like WP-Super-Cache), so we 
+ 	        }
+            // The blog may be using an HTML cache (like WP-Super-Cache), so we
             // have to check immediately if we need to invalidate the HTML cache
             // since we won't be able to when the cached HTML of the index itself is accessed.
             $dirtyposts = az_process_dirty_post($index, $postid, $dirtyposts);
@@ -175,7 +175,7 @@ function az_add_dirty_post($postid) {
 
 /**
  * Cannot use microtime(true) because it is not available
- * in PHP4. 
+ * in PHP4.
  *
  * @param unknown_type $start
  * @param unknown_type $end
@@ -196,9 +196,9 @@ function az_microtime_diff($start, $end = false) {
 
 
 /**
- * For the specified index, find out if the post invalidates the 
+ * For the specified index, find out if the post invalidates the
  * cache.  If it does, then call the HTML cache function to invalidate
- * the HTML cache for the page(s) the index is being displayed on. 
+ * the HTML cache for the page(s) the index is being displayed on.
  *
  * @param db_index $dbindex index settings loaded from the database
  * @param int $postid id of the post that has just been modified in some way
@@ -210,7 +210,7 @@ function az_process_dirty_post($index, $postid, $dirtyposts) {
     $cache = new az_index_cache($req, 0, 0, false);
 
     // First check to see if post is in index.  If it is, we assume that the
-    // change might affect the index page even if it might not. 
+    // change might affect the index page even if it might not.
     //az_trace("az_process_dirty_post : postid = $postid");
     //az_trace("az_process_dirty_post : cache = ".(is_array($cache->itemcache) ? implode(",", $cache->itemcache) : 'empty'));
     $dirty = az_is_set($index->options, 'disable-cache') || (is_array($cache->itemcache['id']) && in_array($postid, $cache->itemcache['id']));
@@ -224,7 +224,7 @@ function az_process_dirty_post($index, $postid, $dirtyposts) {
         $dirty = is_array($posts) && count($posts) > 0;
         //az_trace("az_process_dirty_post: is post to be added to index? ".($dirty ? "yes" : "no"));
     }
-    
+
     // If it looks as though the index is dirty, then tell the HTML
     // cache to remove the index page.
     if ($dirty) {
@@ -247,7 +247,7 @@ function az_flush_html_cache($idindex) {
     unset($dirtyposts[$idindex]);
     az_set_dirty_posts($dirtyposts);
     az_release_cache_mutex();
-} 
+}
 
 function az_check_html_cache($idindex, $dirtyposts) {
     //az_trace("az_check_html_cache: $idindex");
@@ -284,8 +284,8 @@ class az_index_cache {
     var $convertchars;     // True if the index items must be converted to single-byte characters (for sorting)
     var $charmapper;       // If required, used to map multi-byte characters to the equivalent base character
     var $languagetable;    // Name of the language table to use when building the index grouping and alpha links
-    var $locale;           // Name of the locale to use during the sorting of the index 
-        
+    var $locale;           // Name of the locale to use during the sorting of the index
+
     /**
      * Constructor for the az_index_cache class.  This function either rebuilds the
      * cached index from cache data stored in the database or, if there is no stored
@@ -295,7 +295,7 @@ class az_index_cache {
      * @param az_request $index index to be displayed, include all the current settings
      * @param int $pageid id of page or post displaying the index
      * @param int $pageno the index of the page in the index to be displayed
-     * @param boolean $buildcache if true (default) then fully build the cache 
+     * @param boolean $buildcache if true (default) then fully build the cache
      * @return az_index_cache the index cache
      */
     function az_index_cache($index, $pageid, $pageno, $buildcache = true) {
@@ -303,14 +303,14 @@ class az_index_cache {
 		$this->cache_disabled = az_is_set($index->options, 'disable-cache');
         $this->has_alphalinks = az_is_set($index->options, 'alpha-links');
         $this->is_multipage = az_is_set($index->options, 'multipage') && $index->perpage > 0;
-        
+
         $this->index = $index;
 		$this->pageno = $pageno;
         $this->itemcache = unserialize($index->itemcache);
-        
+
         // Set up NLS options.
         $this->is_multibyte = az_is_set($index->options, 'nls') && function_exists('mb_strpos');
-        
+
         if ($this->is_multibyte) {
             if (az_is_set($index->options, 'nls-equiv') && !empty($index->nlsequiv)) {
                 $this->languagetable = $index->nlsequiv;
@@ -323,14 +323,14 @@ class az_index_cache {
                 $this->locale = $index->nlslocale;
             }
         }
-        
+
         $this->ignorechars = az_get_ignorechars($index, $this->is_multibyte);
         $this->convertchars = false;
 
         if ($buildcache) {
             // This is the main path for building or rebuilding the cache
             $this->add_current_page_to_cache($index->id, $pageid);
-        
+
             if ($this->cache_disabled || $this->is_dirty()) {
        		    $this->build_index();
                 $this->write_cache();
@@ -379,18 +379,18 @@ class az_index_cache {
             $keys = az_slice_array($this->itemcache['key'], $this->pageno, $this->pagecount, $this->index->perpage, $this->is_multipage);
         }
         $this->items = $this->get_index_items($this->index, $ids, $keys);
-	}	
-	
+	}
+
     function write_cache() {
     	global $wpdb;
-        
+
     	$id = $this->index->id;
-    	
+
         if (!$this->cache_disabled) {
             $itemcache = serialize($this->itemcache);
             $linkcache = serialize($this->alphalinks);
         }
-    	
+
         $query = "UPDATE ".AZ_TABLE." SET itemcache = '$itemcache', linkcache = '$linkcache' WHERE idindex = $id";
         $rc = $wpdb->query($query);
         //az_println("fn:write_cache : query = ".$query."<br/> rc = ".$rc);
@@ -447,13 +447,13 @@ class az_index_cache {
 	}
 
 	/**
-	 * This function tests to see if an item in the dirty list has changed in such a way 
+	 * This function tests to see if an item in the dirty list has changed in such a way
 	 * that invalidates the order and/or size of the index.  If the item is already in the
 	 * index, then we put it and the previous and next items in the index (in their current
 	 * order) and execute the index's sort.  If the resulting order is different, then we
 	 * know that the cache is now invalid.  This function also works for the cases where
 	 * an item has been deleted or removed from the index, or where a new item needs to be
-	 * added. 
+	 * added.
 	 *
 	 * @param $index index being tested
 	 * @param $indexitems current ordered array of cached items
@@ -478,18 +478,18 @@ class az_index_cache {
                 if ($pos > 0) {
                     $testhit[] = $indexitems['id'][$pos - 1];
                     if ($indexitems['key'] != 0) {
-                        $testkey[] = $indexitems['key'][$pos - 1]; 
+                        $testkey[] = $indexitems['key'][$pos - 1];
                     }
                 }
                 $testhit[] = $postid;
                 if (pos !== false && $indexitems['key'] != 0) {
-                     $testkey[] = $indexitems['key'][$pos]; 
+                     $testkey[] = $indexitems['key'][$pos];
                 }
-                // Fetch the next postid in the index (if not at the end)                              
-                if ($pos !== false && $pos < count($indexitems['id']) - 1) { 
+                // Fetch the next postid in the index (if not at the end)
+                if ($pos !== false && $pos < count($indexitems['id']) - 1) {
                     $testhit[] = $indexitems['id'][$pos + 1];
                     if ($indexitems['key'] != 0) {
-                        $testkey[] = $indexitems['key'][$pos + 1]; 
+                        $testkey[] = $indexitems['key'][$pos + 1];
                     }
                 }
                 // Now put them through the usual retrieval and sort.
@@ -497,13 +497,13 @@ class az_index_cache {
                 $result = $this->get_item_ids($items);
                 // Now check to see if the sort order is the same as before or different.
                 $diff = array_diff_assoc($testhit, $result);
-            
+
                 //az_trace("     test: ".implode(",", $testhit));
                 //az_trace("   result: ".implode(",", $result));
                 //az_trace("     diff: ".implode(",", $diff));
                 //az_trace("    test1: ".((count($diff) > 0 && $pos !== false) ? "true" : "false"));
                 //az_trace("    test2: ".((count($diff) == 0 && $pos === false) ? "true" : "false"));
-                
+
                 // If there is a difference, the index cache is now invalid.
                 if ((count($diff) > 0 && $pos !== false) || (count($diff) == 0 && $pos === false)) {
             	    $dirty = true;
@@ -516,7 +516,7 @@ class az_index_cache {
 		}
         return $dirty;
 	}
-	
+
     /**
      * Get the items to be added to the index and sort them in the specified order.
      *
@@ -533,30 +533,30 @@ class az_index_cache {
         // Build an array of items from the query results.
         $items = array();
         $hasfilter = has_filter('azindex_item');
-        
+
         foreach ($posts as $row) {
             $item = $this->get_post_index_info($index, $row, $hasfilter);
             if ($item != null) {
                 $items[] = $item;
             }
         }
-        
+
         // Sort the items into alphabetical order, as specified.
         if ($items && (empty($ids) || $revalidatesort)) {
             // Both globals only used in the compare function.
             global $az_nonalphaend, $az_multibyte;
             $az_multibyte = $this->is_multibyte;
-            
+
             // Determine where to put the non-alpha starting entries by setting a signed variable.
             $az_nonalphaend = az_is_set($index->options, 'non-alpha-end') ? -1 : 1;
-            
+
             // Sort the index using the specified comparison function.
             $comparefn = (az_is_set($index->options, 'custom-sort') && trim($index->customsort) != '') ? $index->customsort : 'az_compare';
-            
+
             // If NLS support is turned on, then set the appropriate locale.
             if ($this->is_multibyte) {
                 if (!empty($this->locale)) {
-                    $defaultlocale = setlocale(LC_COLLATE, null);            
+                    $defaultlocale = setlocale(LC_COLLATE, null);
                     setlocale(LC_COLLATE, $this->locale);
                 } else {
                     // This seems to improve ths chances of collating working
@@ -565,12 +565,12 @@ class az_index_cache {
                 }
             }
             usort($items, $comparefn);
-            
+
             // Reset the locale to the default, if necessary.
             if (!empty($defaultlocale)) {
                 setlocale(LC_COLLATE, $defaultlocale);
             }
-            
+
             if (!$this->cache_disabled && !$revalidate) {
                 // Add the ids of the sorted items to the item cache
                 unset($this->itemcache);
@@ -587,7 +587,7 @@ class az_index_cache {
                 }
             }
         }
-        return $items;    
+        return $items;
     }
 
     function get_item_ids($items) {
@@ -599,7 +599,7 @@ class az_index_cache {
         }
         return $ids;
     }
-    
+
     /**
      * Query the items to be added to the index from the blog's database.
      *
@@ -611,7 +611,7 @@ class az_index_cache {
         //az_trace('fn:query_index_items: index id: '.$index->id);
 
         $fields = 'ID, post_title, post_excerpt, post_author';
-        $notags = false; 
+        $notags = false;
         $nocats = false;
         // If we're querying categories or tags we need to include
         // the term_id field from the term_taxonomy table.
@@ -621,8 +621,8 @@ class az_index_cache {
         } else if ($index->head == 'tags') {
             $fields .= ', tax1.term_id';
             $notags = true;
-        } 
-        
+        }
+
         $query = "SELECT DISTINCT $fields FROM $wpdb->posts";
         $selection = "'post'";
         if (az_is_set($index->options, 'include-pages')) {
@@ -633,7 +633,7 @@ class az_index_cache {
             }
         }
         $where = "post_status = 'publish' AND post_type IN ($selection)";
-        
+
         // We just want to validate whether the specified post(s) belong in the index.
         if ($revalidate && !empty($idlist)) {
             $ids = implode(",", $idlist);
@@ -654,10 +654,10 @@ class az_index_cache {
         } else {
             // Process the terms in the index settings.
             $terms = new az_terms($index->catids, $index->tagids, az_is_set($index->options, 'child-cats'));
-            
+
             // Process the included and excluded categories.
             if (!empty($terms->excats)) {
-                $excats .= " AND $wpdb->posts.ID NOT IN (SELECT DISTINCT object_id FROM $wpdb->term_relationships" 
+                $excats .= " AND $wpdb->posts.ID NOT IN (SELECT DISTINCT object_id FROM $wpdb->term_relationships"
                           ." INNER JOIN $wpdb->term_taxonomy AS tax3 ON ($wpdb->term_relationships.term_taxonomy_id = tax3.term_taxonomy_id"
                           ." AND tax3.taxonomy = 'category' AND tax3.term_id IN($terms->excats)))";
             }
@@ -672,15 +672,15 @@ class az_index_cache {
             } else if (!empty($terms->excats)) {
                 $query .= " INNER JOIN $wpdb->term_relationships AS rel2 ON ($wpdb->posts.ID = rel2.object_id";
                 $query .= $excats.")";
-            }   
+            }
 
             // Process the included and excluded tags.
             if (!empty($terms->extags)) {
-                $extags .= " AND $wpdb->posts.ID NOT IN (SELECT DISTINCT object_id FROM $wpdb->term_relationships" 
+                $extags .= " AND $wpdb->posts.ID NOT IN (SELECT DISTINCT object_id FROM $wpdb->term_relationships"
                          ." INNER JOIN $wpdb->term_taxonomy AS tax4 ON ($wpdb->term_relationships.term_taxonomy_id = tax4.term_taxonomy_id"
                          ." AND tax4.taxonomy = 'post_tag' AND tax4.term_id IN($terms->extags)))";
             }
-                
+
             if (!empty($terms->intags)) {
                 $query .= " INNER JOIN $wpdb->term_relationships AS rel1 ON ($wpdb->posts.ID = rel1.object_id";
                 if (!empty($terms->extags)) {
@@ -695,9 +695,9 @@ class az_index_cache {
             }
             $where = " WHERE $where";
         }
-        
+
         // If were sorting on tags or categories and we didn't specify any tags
-        // or categories to be included in the sort then we need to do these 
+        // or categories to be included in the sort then we need to do these
         // joins to get the term_id field included in the results.
         if ($nocats) {
             $query .= " INNER JOIN $wpdb->term_relationships AS rel4 ON ($wpdb->posts.ID = rel4.object_id)"
@@ -710,7 +710,7 @@ class az_index_cache {
         }
         $posts = $wpdb->get_results($query.$where);
         //az_trace("fn:get_index_items : query = ".$query.$where."<br/> rc = ".$posts." - count = ".count($posts));
-        
+
         // If this is an index where multiple items are allowed
         // then we need to do some post-processing of the query
         // to get the items in the correct order.
@@ -722,7 +722,7 @@ class az_index_cache {
         if (empty($idlist) && !empty($index->headkeyids)) {
             $posts = $this->az_filter_posts($posts, $index->headkeyids, $index->head);
         }
-        return $posts;    
+        return $posts;
     }
 
     /**
@@ -760,11 +760,11 @@ class az_index_cache {
                 }
             }
         }
-        return $posts;        
+        return $posts;
     }
-    
+
     /**
-     * Clean up the results array if there are keys present.  The items need 
+     * Clean up the results array if there are keys present.  The items need
      * to be reordered and then truncated to remove excess results from the
      * query.
      *
@@ -782,7 +782,7 @@ class az_index_cache {
                 for ($j = $i; $posts[$j]->ID != $ids[$i] && $j < count($posts); $j++);
                 $temp = $posts[$i];
                 $posts[$i] = $posts[$j];
-                $posts[$j] = $temp; 
+                $posts[$j] = $temp;
             }
             $posts[$i]->term_id = $keys[$i];
         }
@@ -792,11 +792,11 @@ class az_index_cache {
         }
         return $posts;
     }
-    
+
     function get_post_index_info($index, $row, $hasfilter) {
         $item = null;
-        $head = ltrim($this->get_post_item($row->ID, $row->post_title, $row->post_excerpt, 
-                                          $row->post_author, null, $index->head, $index->headkey));        
+        $head = ltrim($this->get_post_item($row->ID, $row->post_title, $row->post_excerpt,
+                                          $row->post_author, null, $index->head, $index->headkey));
         if (!empty($head)) {
 
             // Remove any characters we want to ignore during the search.
@@ -815,7 +815,7 @@ class az_index_cache {
             } else {
                 $key = null;
             }
-            
+
             // Don't add item to the index if there is no heading.
             $item = array('id' => $row->ID,
                           // 'initial' => 0,  // Set after the filter is called.
@@ -827,7 +827,7 @@ class az_index_cache {
                           'sort-desc' => $sortdesc,
                           'key' => $key
                          );
-                         
+
             if ($hasfilter) {
                 $item = apply_filters('azindex_item', $item, $index->id);
             }
@@ -838,8 +838,8 @@ class az_index_cache {
             }
             // Fetch the equivalent initial for the entry, (i.e. unaccented characters)
             $item['initial'] = $this->get_base_initial($item['sort-head']);
-            
-            // If we are running on windows then we have to deconvert before sorting. 
+
+            // If we are running on windows then we have to deconvert before sorting.
             if ($this->convertchars) {
                 $item['sort-head'] = utf8_decode($item['sort-head']);
                 $item['sort-subhead'] = utf8_decode($item['sort-subhead']);
@@ -854,7 +854,7 @@ class az_index_cache {
             $char = mb_substr($title, 0, 1, "UTF-8");
             // Check the length of the character in bytes.
             if (strlen($char) > 1) {
-                // If it's a multibyte character then obtain the 
+                // If it's a multibyte character then obtain the
                 // base unaccented character, if there is one.
                 if (empty($this->charmapper)) {
                     $this->charmapper = az_get_collation_mapper($this->languagetable);
@@ -870,10 +870,10 @@ class az_index_cache {
         }
         return $char;
     }
-    
+
     /**
      * Get the item for a post specified in the index as the heading,
-     * subheading, or description. 
+     * subheading, or description.
      *
      * @param $type type of item to retrieve
      * @param $key item key, if the item is a custom field
@@ -884,10 +884,10 @@ class az_index_cache {
         switch ($type) {
             case 'title':
                 $item = $title;
-                break; 
+                break;
             case 'excerpt':
                 $item = $excerpt;
-                break; 
+                break;
             case 'author':
                 $item = get_author_name($author);
                 break;
@@ -896,13 +896,13 @@ class az_index_cache {
                 break;
             case 'tags':
                 $item = get_term_field('name', $term_id, 'post_tag', 'raw');
-                break;     
+                break;
             case 'custom':
                 // Only the first custom field found with key is used.
                 $item = get_post_custom_values($key, $postid);
                 $item = $item[0];
                 break;
-        }   
+        }
         return $item;
     }
 
@@ -912,7 +912,7 @@ class az_index_cache {
      *
      * @param $items the items in the index
      * @param $perpage number of items per page
-     * @return an array characters and what page of the index they are on 
+     * @return an array characters and what page of the index they are on
     */
     function collect_links($items, $perpage) {
         for ($i = 0; $i < count($items); $i++) {
@@ -931,9 +931,9 @@ class az_index_cache {
     }
 }
 /**
- * Compare function for sorting the index into alphabetical order, first using the 
- * heading, then the subheading, then the description.  Non-alpha numbers will be 
- * sorted to the top of the list (could make this an option at some point). 
+ * Compare function for sorting the index into alphabetical order, first using the
+ * heading, then the subheading, then the description.  Non-alpha numbers will be
+ * sorted to the top of the list (could make this an option at some point).
  *
  * @param $in1 first index item to compare
  * @param $in2 second index item to compare
@@ -943,9 +943,9 @@ function az_compare($in1, $in2) {
     global $az_nonalphaend, $az_multibyte;
     $rc = az_strcoll($in1['sort-head'], $in2['sort-head'], $az_multibyte);
     if ($rc == 0) {
-        $rc = az_strcoll($in1['sort-subhead'], $in2['sort-subhead'], $az_multibyte);            
+        $rc = az_strcoll($in1['sort-subhead'], $in2['sort-subhead'], $az_multibyte);
         if ($rc == 0) {
-            $rc = az_strcoll($in1['sort-desc'], $in2['sort-desc'], $az_multibyte);            
+            $rc = az_strcoll($in1['sort-desc'], $in2['sort-desc'], $az_multibyte);
         }
     } else {
         if (!empty($in1['initial']) && !empty($in2['initial'])) {
@@ -957,7 +957,7 @@ function az_compare($in1, $in2) {
                     $pos1 = mb_ereg_match('[[:upper:][:lower:][:digit:]]', $in1['initial']);
                     $pos2 = mb_ereg_match('[[:upper:][:lower:][:digit:]]', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2");
-                } else {                
+                } else {
                     $pos1 = preg_match('[[:alnum:]]', $in1['initial']);
                     $pos2 = preg_match('[[:alnum:]]', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2 : $az_nonalphaend");
@@ -968,28 +968,28 @@ function az_compare($in1, $in2) {
                     $rc = 1 * $az_nonalphaend;
                 }
             }
-        }   
+        }
     }
     return $rc;
 }
 
 function az_slice_array($array, $pageno, $pagecount, $perpage, $multipage) {
-        
+
     $start = 0;
     $length = count($array);
-    
+
     if ($multipage) {
         $length = $perpage;
         if ($pageno > 0) {
             // Keep the last item on the previous page in the front of the array if
-            // we are not on the first (or only) page of the index. 
+            // we are not on the first (or only) page of the index.
             $start = $pageno * $perpage - 1;
-            $length++; 
+            $length++;
         }
         if ($pageno < $pagecount - 1) {
             // Keep the first item on the next page at the end of the array if
-            // we are not on the last (or only) page of the index. 
-            $length++; 
+            // we are not on the last (or only) page of the index.
+            $length++;
         }
     }
     return array_slice($array, $start, $length);
@@ -1020,7 +1020,7 @@ class az_mutex {
         if (AZ_OS_WIN || !function_exists('sem_get')) {
             $this->use_flock = true;
         }
-        
+
         $this->id = $id;
 
         if ($this->use_flock) {
@@ -1084,8 +1084,8 @@ class az_mutex {
 }
 
 /**
- * Class encapsulating the code for processing the terms (categories and tags) 
- * specified in the settings for an index.  Responsible for separating out 
+ * Class encapsulating the code for processing the terms (categories and tags)
+ * specified in the settings for an index.  Responsible for separating out
  * the included and excluded terms and for finding all the children of the
  * specified categories.
  *
@@ -1096,7 +1096,7 @@ class az_terms {
     var $excats; // Excluded category ids
     var $extags; // Excluded tag ids
     var $tree;   // Category relationship tree extracted from database
-    
+
     /**
      * Constructor for the az_terms class. Does all the necessary processing
      * on the terms ready to be used for querying the database for the index.
@@ -1108,11 +1108,13 @@ class az_terms {
     function az_terms($cats, $tags, $include_children) {
         $terms = $this->split_terms($cats);
         $this->incats = $terms['include'];
-        $this->excats = $terms['exclude'];
+        if(isset($terms['exclude']) && !empty($terms['exclude'])) {
+            $this->excats = $terms['exclude'];
+        }
         $terms = $this->split_terms($tags);
         $this->intags = $terms['include'];
         $this->extags = $terms['exclude'];
-        
+
         if ($include_children) {
             $this->tree = $this->get_cat_tree();
             $this->incats = $this->get_children($this->incats);
@@ -1123,13 +1125,13 @@ class az_terms {
         //az_println('intags = '.$this->intags);
         //az_println('extags = '.$this->extags);
     }
-    
+
     /**
-     * Split the list of terms into those for terms to be included 
+     * Split the list of terms into those for terms to be included
      * and those for terms to be excluded (prefixed with ~ sign)
      *
      * @param string $termids comma separated list of term ids (categories or tags).
-     * @return array containing two strings for 'include' and 'exclude' term ids. 
+     * @return array containing two strings for 'include' and 'exclude' term ids.
      */
     function split_terms($termids) {
         // Only do the split if there is a ~ sign in the string.
@@ -1144,12 +1146,14 @@ class az_terms {
             }
             $termlist['exclude'] = trim($exclude, ',');
             $termlist['include'] = trim($include, ',');
-            
+
         } else if (!empty($termids)) {
-            // No exclude terms, just copy into the include array. 
+            // No exclude terms, just copy into the include array.
             $termlist['include'] = $termids;
+        } else if (!empty($termlist)) {
+            return $termlist;
         }
-        return $termlist;
+        return array();
     }
 
     function get_children($idlist) {
@@ -1157,19 +1161,19 @@ class az_terms {
             $ids = explode(",", $idlist);
             foreach ($ids as $id) {
                 $children = $this->find_children(null, $id);
-                if (!empty($children)) { 
+                if (!empty($children)) {
                     $idlist .= ','.implode(',', $children);
                 }
             }
         }
         return $idlist;
     }
-    
+
     function find_children($children, $id) {
         foreach ($this->tree as $cat) {
             if ($cat['parent'] == $id) {
                 $children[] = $cat['id'];
-                $children = $this->find_children($children, $cat['id']);                                         
+                $children = $this->find_children($children, $cat['id']);
             }
         }
         return $children;
@@ -1273,7 +1277,7 @@ function az_dump_dirty($dirty, $pad = "") {
         if (is_array($item)) {
             if (is_string($key)) {
                  az_trace('   '.$key.':');
-                 az_dump_dirty($item, "   ");   
+                 az_dump_dirty($item, "   ");
             } else {
                  az_trace($pad."   $key = ".implode(',', $item));
             }
