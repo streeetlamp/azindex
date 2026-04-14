@@ -10,6 +10,17 @@
       "matchCommandLine": true
     },
     "git add": true,
-    "git commit": true
+    "git commit": true,
+    "/^php -l az-index-cache\\.php && git diff --stat az-index-cache\\.php$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "/^php -l az-index-admin\\.php$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "command": true,
+    "/usr/bin/grep": true,
+    "/usr/bin/head": true
   }
 }

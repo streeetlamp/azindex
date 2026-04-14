@@ -826,7 +826,7 @@ function az_display_index_dialog($req) {
                 </tr>
                 <tr class="form-field">
                     <th scope="row"><label for="desc">Description</label></th>
-                    <td class="<?php echo $error_field['desckey']; ?>" >
+                    <td class="<?php echo $req->error_field['desckey']; ?>" >
                         <select id="desc" name="desc" style="width:10em;margin:3px 0"
                                 onchange="selchanged('desc-key-field', this[this.selectedIndex].value);">
                             <?php az_add_options($req->desc); ?>
@@ -1332,9 +1332,9 @@ class az_request {
 
     function az_request() {
         az_trace('fn:az_request');
-        $this->action = !empty($_GET['action']) ? $_POST['options'] : '';
+        $this->action = !empty($_POST['action']) ? $_POST['action'] : (!empty($_GET['action']) ? $_GET['action'] : '');
         if (empty($this->action)) {
-            if (empty($_POST['cancel']) && empty($_GET['action'])) {
+            if (!empty($_POST['cancel'])) {
                 $this->action = 'cancel';
             }
         }
@@ -1426,14 +1426,14 @@ class az_request {
      */
     function set_vars_from_get() {
         az_trace('fn:set_vars_from_get');
-        $this->id = intval($_GET['indexid']);
-        $this->name = $_GET['name'];
-        $this->info_message = intval($_GET['msg']);
+        $this->id = intval(isset($_GET['indexid']) ? $_GET['indexid'] : 0);
+        $this->name = isset($_GET['name']) ? $_GET['name'] : '';
+        $this->info_message = intval(isset($_GET['msg']) ? $_GET['msg'] : 0);
 
         if ($this->action == 'az-edit-index') {
             $this->set_vars_from_table($this->id);
         } else if ($this->action == 'az-sort-indexes') {
-            $this->sortby = $_GET['by'];
+            $this->sortby = isset($_GET['by']) ? $_GET['by'] : '';
         }
     }
 
