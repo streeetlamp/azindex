@@ -43,6 +43,12 @@
 require_once('az-index-content.php');
 require_once('az-index-cache.php');
 
+if (!function_exists('attribute_escape')) {
+    function attribute_escape($text) {
+        return esc_attr($text);
+    }
+}
+
 global $wpdb;
 
 define('AZ_DEBUG', false);
@@ -1318,6 +1324,10 @@ class az_request {
     /**
      * Constructor for class. Initialize the action instance variable immediately.
      */
+    function __construct() {
+        $this->az_request();
+    }
+
     function az_request() {
         az_trace('fn:az_request');
         $this->action = !empty($_GET['action']) ? $_POST['options'] : '';

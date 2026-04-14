@@ -298,6 +298,10 @@ class az_index_cache {
      * @param boolean $buildcache if true (default) then fully build the cache
      * @return az_index_cache the index cache
      */
+    function __construct($index, $pageid, $pageno, $buildcache = true) {
+        $this->az_index_cache($index, $pageid, $pageno, $buildcache);
+    }
+
     function az_index_cache($index, $pageid, $pageno, $buildcache = true) {
         //$time_start = microtime(true);
 		$this->cache_disabled = az_is_set($index->options, 'disable-cache');
@@ -482,7 +486,7 @@ class az_index_cache {
                     }
                 }
                 $testhit[] = $postid;
-                if (pos !== false && $indexitems['key'] != 0) {
+                 if ($pos !== false && $indexitems['key'] != 0) {
                      $testkey[] = $indexitems['key'][$pos];
                 }
                 // Fetch the next postid in the index (if not at the end)
@@ -1016,6 +1020,10 @@ class az_mutex {
     var $filename = '';
     var $filepointer;
 
+    function __construct($id, $filename = '') {
+        $this->az_mutex($id, $filename);
+    }
+
     function az_mutex($id, $filename = '') {
         if (AZ_OS_WIN || !function_exists('sem_get')) {
             $this->use_flock = true;
@@ -1105,6 +1113,10 @@ class az_terms {
      * @param string $tags comma separated string of tag ids
      * @param boolean $include_children true if child categories are to be included
      */
+    function __construct($cats, $tags, $include_children) {
+        $this->az_terms($cats, $tags, $include_children);
+    }
+
     function az_terms($cats, $tags, $include_children) {
         $terms = $this->split_terms($cats);
         $this->incats = $terms['include'];
