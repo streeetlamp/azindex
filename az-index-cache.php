@@ -845,9 +845,9 @@ class az_index_cache {
 
             // If we are running on windows then we have to deconvert before sorting.
             if ($this->convertchars) {
-                $item['sort-head'] = utf8_decode($item['sort-head']);
-                $item['sort-subhead'] = utf8_decode($item['sort-subhead']);
-                $item['sort-desc'] = utf8_decode($item['sort-desc']);
+                $item['sort-head'] = mb_convert_encoding($item['sort-head'], 'ISO-8859-1', 'UTF-8');
+                $item['sort-subhead'] = mb_convert_encoding($item['sort-subhead'], 'ISO-8859-1', 'UTF-8');
+                $item['sort-desc'] = mb_convert_encoding($item['sort-desc'], 'ISO-8859-1', 'UTF-8');
             }
         }
         return $item;
@@ -962,8 +962,8 @@ function az_compare($in1, $in2) {
                     $pos2 = mb_ereg_match('[[:upper:][:lower:][:digit:]]', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2");
                 } else {
-                    $pos1 = preg_match('[[:alnum:]]', $in1['initial']);
-                    $pos2 = preg_match('[[:alnum:]]', $in2['initial']);
+                    $pos1 = preg_match('/[[:alnum:]]/', $in1['initial']);
+                    $pos2 = preg_match('/[[:alnum:]]/', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2 : $az_nonalphaend");
                 }
                 if ($pos1 === false && !($pos2 === false)) {
