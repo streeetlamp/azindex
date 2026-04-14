@@ -57,7 +57,7 @@ define('AZ_NLS_OPTIONS', 17);
 define('AZ_ADVANCED_OPTIONS', 20);
 define('AZ_PLUGIN_FILE', 'azindex/az-index-admin.php');
 define('AZ_TABLE', $wpdb->prefix.'az_indexes');
-define('AZ_PAGENAME', ($wp_version >= 2.7 ? 'tools.php' : 'edit.php').'?page=az-index-manager');
+define('AZ_PAGENAME', 'tools.php?page=az-index-manager');
 define('AZ_INDEXCHARS', '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 define('AZ_MAXPAGELINKS', 10);  // Note: Must be an even number.
 define('AZ_OS_WIN', substr(PHP_OS, 0, 3) == 'WIN');
@@ -82,7 +82,7 @@ if ($_GET['page'] == 'az-index-manager') {
  * the admin_notices action to display the error message.
  */
 function az_add_admin_page() {
-    add_management_page('Manage Indexes', 'AZIndex', 8, 'az-index-manager', 'az_display_admin_page');
+    add_management_page('Manage Indexes', 'AZIndex', 'manage_options', 'az-index-manager', 'az_display_admin_page');
     $error = get_option('az_plugin_error');
     if (!empty($error)) {
         add_action('admin_notices', 'az_admin_notices');
@@ -142,6 +142,7 @@ function az_plugin_activate() {
     global $wpdb;
 
     // Check to see if we need to upgrade the database table.
+    $upgrade = '';    // Suffix for new table during upgrade; empty means fresh install
     if (az_is_table_present() && !az_is_compatible_version() && !az_is_alpha_version()) {
         az_trace("upgrading...");
         $upgrade = '_upgrade';    // Suffix of new table during the upgrade
@@ -166,13 +167,14 @@ function az_plugin_activate() {
 
     // If the database supports the default character set then add it to
     // the creation query (Note: might be giving a false positive in some cases).
-    if ($wpdb->supports_collation()) {
+    $charset = '';
+    if ($wpdb->has_cap('collation')) {
         $charset = " DEFAULT CHARACTER SET $wpdb->charset;";
     }
 
     // Try creating with the default charset clause, but if that fails try again without it
     $created = maybe_create_table(AZ_TABLE.$upgrade, $sql.$charset);
-    if (!$create) {
+    if (!$created) {
         $created = maybe_create_table(AZ_TABLE.$upgrade, $sql);
     }
 
