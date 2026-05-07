@@ -298,6 +298,10 @@ class az_index_cache {
      * @param boolean $buildcache if true (default) then fully build the cache
      * @return az_index_cache the index cache
      */
+    function __construct($index, $pageid, $pageno, $buildcache = true) {
+        $this->az_index_cache($index, $pageid, $pageno, $buildcache);
+    }
+
     function az_index_cache($index, $pageid, $pageno, $buildcache = true) {
         //$time_start = microtime(true);
 		$this->cache_disabled = az_is_set($index->options, 'disable-cache');
@@ -366,6 +370,7 @@ class az_index_cache {
 	 * items on the current page of the index need to be queried from the database.
 	 */
 	function build_index_from_cache() {
+        $keys = null;
         if ($this->has_alphalinks) {
             $this->alphalinks = unserialize($this->index->linkcache);
         }
@@ -373,7 +378,7 @@ class az_index_cache {
             $this->pagecount = ceil(count($this->itemcache['id']) / $this->index->perpage);
             $this->pageno = ($this->pageno < 0) ? 0 : ($this->pageno >= $this->pagecount ? $this->pagecount - 1 : $this->pageno);
         }
-        $ids = az_slice_array($this->itemcache['id'], $this->pageno, $this->pagecount, $this->index->perpage, $this->is_multipage);
+        $ids = !empty($this->itemcache['id']) ? az_slice_array($this->itemcache['id'], $this->pageno, $this->pagecount, $this->index->perpage, $this->is_multipage) : array();
         if (!empty($this->itemcache['key'])) {
             //az_println("There are keys in the cache");
             $keys = az_slice_array($this->itemcache['key'], $this->pageno, $this->pagecount, $this->index->perpage, $this->is_multipage);
@@ -433,7 +438,7 @@ class az_index_cache {
             // If there is no cache for the index then, by default, the index is dirty.
     	    $dirty = true;
             az_reset_dirty_posts($dirtyposts, $idindex);
-    	} else if (!empty($dirtyposts)) {
+        } else if (!empty($dirtyposts[$idindex]) && is_array($dirtyposts[$idindex])) {
     	    // If there is a cache, then check to see if the items in the dirty list invalidate it
             $dirty = $this->process_dirty_items($this->index, $this->itemcache, $dirtyposts[$idindex]);
             az_reset_dirty_posts($dirtyposts, $idindex);
@@ -461,6 +466,9 @@ class az_index_cache {
 	 * @return boolean true if the index cache is found to be dirty
 	 */
 	function process_dirty_items($index, $indexitems, $dirtyitems) {
+        if (empty($dirtyitems) || !is_array($dirtyitems)) {
+            return false;
+        }
         //az_trace("process dirty items: dirty items = ".implode(",", $dirtyitems));
         $dirty = false;
 		foreach ($dirtyitems as $postid) {
@@ -474,21 +482,23 @@ class az_index_cache {
             foreach ($position as $pos) {
                 //az_trace("   process_dirty_items : processing next item:".($pos === false ? "false" : $pos));
                 unset($testhit);
+                unset($testkey);
+                $has_keys = !empty($indexitems['key']) && is_array($indexitems['key']);
                 // Fetch the previous postid in the index (if not at the start)
                 if ($pos > 0) {
                     $testhit[] = $indexitems['id'][$pos - 1];
-                    if ($indexitems['key'] != 0) {
+                    if ($has_keys) {
                         $testkey[] = $indexitems['key'][$pos - 1];
                     }
                 }
                 $testhit[] = $postid;
-                if (pos !== false && $indexitems['key'] != 0) {
+                 if ($pos !== false && $has_keys) {
                      $testkey[] = $indexitems['key'][$pos];
                 }
                 // Fetch the next postid in the index (if not at the end)
                 if ($pos !== false && $pos < count($indexitems['id']) - 1) {
                     $testhit[] = $indexitems['id'][$pos + 1];
-                    if ($indexitems['key'] != 0) {
+                    if ($has_keys) {
                         $testkey[] = $indexitems['key'][$pos + 1];
                     }
                 }
@@ -841,9 +851,9 @@ class az_index_cache {
 
             // If we are running on windows then we have to deconvert before sorting.
             if ($this->convertchars) {
-                $item['sort-head'] = utf8_decode($item['sort-head']);
-                $item['sort-subhead'] = utf8_decode($item['sort-subhead']);
-                $item['sort-desc'] = utf8_decode($item['sort-desc']);
+                $item['sort-head'] = mb_convert_encoding($item['sort-head'], 'ISO-8859-1', 'UTF-8');
+                $item['sort-subhead'] = mb_convert_encoding($item['sort-subhead'], 'ISO-8859-1', 'UTF-8');
+                $item['sort-desc'] = mb_convert_encoding($item['sort-desc'], 'ISO-8859-1', 'UTF-8');
             }
         }
         return $item;
@@ -899,8 +909,8 @@ class az_index_cache {
                 break;
             case 'custom':
                 // Only the first custom field found with key is used.
-                $item = get_post_custom_values($key, $postid);
-                $item = $item[0];
+                $values = get_post_custom_values($key, $postid);
+                $item = (is_array($values) && isset($values[0])) ? $values[0] : null;
                 break;
         }
         return $item;
@@ -915,6 +925,8 @@ class az_index_cache {
      * @return an array characters and what page of the index they are on
     */
     function collect_links($items, $perpage) {
+        $prevchar = '';
+        $indexchars = array();
         for ($i = 0; $i < count($items); $i++) {
             $item = $items[$i];
             if (!empty($item)) {
@@ -958,8 +970,8 @@ function az_compare($in1, $in2) {
                     $pos2 = mb_ereg_match('[[:upper:][:lower:][:digit:]]', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2");
                 } else {
-                    $pos1 = preg_match('[[:alnum:]]', $in1['initial']);
-                    $pos2 = preg_match('[[:alnum:]]', $in2['initial']);
+                    $pos1 = preg_match('/[[:alnum:]]/', $in1['initial']);
+                    $pos2 = preg_match('/[[:alnum:]]/', $in2['initial']);
                     //az_trace("COMP:".$in1['initial'].":".$in2['initial'].": $pos1 : $pos2 : $az_nonalphaend");
                 }
                 if ($pos1 === false && !($pos2 === false)) {
@@ -1015,6 +1027,10 @@ class az_mutex {
     var $use_flock = false;
     var $filename = '';
     var $filepointer;
+
+    function __construct($id, $filename = '') {
+        $this->az_mutex($id, $filename);
+    }
 
     function az_mutex($id, $filename = '') {
         if (AZ_OS_WIN || !function_exists('sem_get')) {
@@ -1105,15 +1121,20 @@ class az_terms {
      * @param string $tags comma separated string of tag ids
      * @param boolean $include_children true if child categories are to be included
      */
+    function __construct($cats, $tags, $include_children) {
+        $this->az_terms($cats, $tags, $include_children);
+    }
+
     function az_terms($cats, $tags, $include_children) {
         $terms = $this->split_terms($cats);
-        $this->incats = $terms['include'];
+        $this->incats = isset($terms['include']) ? $terms['include'] : '';
+        $this->excats = '';
         if(isset($terms['exclude']) && !empty($terms['exclude'])) {
             $this->excats = $terms['exclude'];
         }
         $terms = $this->split_terms($tags);
-        $this->intags = $terms['include'];
-        $this->extags = $terms['exclude'];
+        $this->intags = isset($terms['include']) ? $terms['include'] : '';
+        $this->extags = isset($terms['exclude']) ? $terms['exclude'] : '';
 
         if ($include_children) {
             $this->tree = $this->get_cat_tree();
@@ -1134,6 +1155,9 @@ class az_terms {
      * @return array containing two strings for 'include' and 'exclude' term ids.
      */
     function split_terms($termids) {
+        $include = '';
+        $exclude = '';
+        $termlist = array();
         // Only do the split if there is a ~ sign in the string.
         if (!(strpos($termids, '~') === false)) {
             $ids = explode(',', $termids);
@@ -1150,10 +1174,8 @@ class az_terms {
         } else if (!empty($termids)) {
             // No exclude terms, just copy into the include array.
             $termlist['include'] = $termids;
-        } else if (!empty($termlist)) {
-            return $termlist;
         }
-        return array();
+        return $termlist;
     }
 
     function get_children($idlist) {

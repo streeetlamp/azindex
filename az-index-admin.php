@@ -43,6 +43,12 @@
 require_once('az-index-content.php');
 require_once('az-index-cache.php');
 
+if (!function_exists('attribute_escape')) {
+    function attribute_escape($text) {
+        return esc_attr($text);
+    }
+}
+
 global $wpdb;
 
 define('AZ_DEBUG', false);
@@ -51,7 +57,7 @@ define('AZ_NLS_OPTIONS', 17);
 define('AZ_ADVANCED_OPTIONS', 20);
 define('AZ_PLUGIN_FILE', 'azindex/az-index-admin.php');
 define('AZ_TABLE', $wpdb->prefix.'az_indexes');
-define('AZ_PAGENAME', ($wp_version >= 2.7 ? 'tools.php' : 'edit.php').'?page=az-index-manager');
+define('AZ_PAGENAME', 'tools.php?page=az-index-manager');
 define('AZ_INDEXCHARS', '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 define('AZ_MAXPAGELINKS', 10);  // Note: Must be an even number.
 define('AZ_OS_WIN', substr(PHP_OS, 0, 3) == 'WIN');
@@ -76,7 +82,7 @@ if ($_GET['page'] == 'az-index-manager') {
  * the admin_notices action to display the error message.
  */
 function az_add_admin_page() {
-    add_management_page('Manage Indexes', 'AZIndex', 8, 'az-index-manager', 'az_display_admin_page');
+    add_management_page('Manage Indexes', 'AZIndex', 'manage_options', 'az-index-manager', 'az_display_admin_page');
     $error = get_option('az_plugin_error');
     if (!empty($error)) {
         add_action('admin_notices', 'az_admin_notices');
@@ -136,6 +142,7 @@ function az_plugin_activate() {
     global $wpdb;
 
     // Check to see if we need to upgrade the database table.
+    $upgrade = '';    // Suffix for new table during upgrade; empty means fresh install
     if (az_is_table_present() && !az_is_compatible_version() && !az_is_alpha_version()) {
         az_trace("upgrading...");
         $upgrade = '_upgrade';    // Suffix of new table during the upgrade
@@ -160,13 +167,14 @@ function az_plugin_activate() {
 
     // If the database supports the default character set then add it to
     // the creation query (Note: might be giving a false positive in some cases).
-    if ($wpdb->supports_collation()) {
+    $charset = '';
+    if ($wpdb->has_cap('collation')) {
         $charset = " DEFAULT CHARACTER SET $wpdb->charset;";
     }
 
     // Try creating with the default charset clause, but if that fails try again without it
     $created = maybe_create_table(AZ_TABLE.$upgrade, $sql.$charset);
-    if (!$create) {
+    if (!$created) {
         $created = maybe_create_table(AZ_TABLE.$upgrade, $sql);
     }
 
@@ -818,7 +826,7 @@ function az_display_index_dialog($req) {
                 </tr>
                 <tr class="form-field">
                     <th scope="row"><label for="desc">Description</label></th>
-                    <td class="<?php echo $error_field['desckey']; ?>" >
+                    <td class="<?php echo $req->error_field['desckey']; ?>" >
                         <select id="desc" name="desc" style="width:10em;margin:3px 0"
                                 onchange="selchanged('desc-key-field', this[this.selectedIndex].value);">
                             <?php az_add_options($req->desc); ?>
@@ -1318,11 +1326,15 @@ class az_request {
     /**
      * Constructor for class. Initialize the action instance variable immediately.
      */
+    function __construct() {
+        $this->az_request();
+    }
+
     function az_request() {
         az_trace('fn:az_request');
-        $this->action = !empty($_GET['action']) ? $_POST['options'] : '';
+        $this->action = !empty($_POST['action']) ? $_POST['action'] : (!empty($_GET['action']) ? $_GET['action'] : '');
         if (empty($this->action)) {
-            if (empty($_POST['cancel']) && empty($_GET['action'])) {
+            if (!empty($_POST['cancel'])) {
                 $this->action = 'cancel';
             }
         }
@@ -1414,14 +1426,14 @@ class az_request {
      */
     function set_vars_from_get() {
         az_trace('fn:set_vars_from_get');
-        $this->id = intval($_GET['indexid']);
-        $this->name = $_GET['name'];
-        $this->info_message = intval($_GET['msg']);
+        $this->id = intval(isset($_GET['indexid']) ? $_GET['indexid'] : 0);
+        $this->name = isset($_GET['name']) ? $_GET['name'] : '';
+        $this->info_message = intval(isset($_GET['msg']) ? $_GET['msg'] : 0);
 
         if ($this->action == 'az-edit-index') {
             $this->set_vars_from_table($this->id);
         } else if ($this->action == 'az-sort-indexes') {
-            $this->sortby = $_GET['by'];
+            $this->sortby = isset($_GET['by']) ? $_GET['by'] : '';
         }
     }
 
