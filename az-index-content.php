@@ -99,6 +99,8 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
     $stylesheet = az_get_stylesheet($options, $index->cols, $grouped ? $index->cssgroup : $index->csssingle);
 
     $output = '';
+    $prevhead = '';
+    $previnitial = '';
     if (!empty($items)) {
 
         // Set the default separator if the user hasn't set one.
@@ -301,6 +303,9 @@ function az_format_alphalinks($idindex, $indexchars, $currentpage, $pagecount, $
     $title = __('Go to the letter', 'azindex');
     $alphafilter = 'azindex_alpha_links';
     $cr = chr(10);
+    $output = '';
+    $nonalpha = '';
+    $links = array();
 
     // First build an array of all the link information, if necessary.
     if ($add_unused || has_filter($alphafilter)) {
@@ -404,6 +409,7 @@ function az_format_pagelinks($idindex, $currentpage, $pagecount, $pagelink, $opt
     $title = __("Go to page", 'azindex');
     $anchor = '#azindex-'.$idindex;
     $cr = chr(10);
+    $output = '';
 
     if ($pagecount > $maxpages) {
         $output .= '<span class="azlinknav '.($currentpage > 0 ? '"><a href="'.$pagelink.$pgno.$pgdn.$anchor.'" title="'.sprintf(__('Back %d pages', 'azindex'), $maxpages).'">&lt;&lt;</a>' : 'aznavdisabled">&lt;&lt;').'</span>&nbsp;';
