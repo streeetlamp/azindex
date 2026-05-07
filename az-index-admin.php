@@ -1,10 +1,10 @@
 <?php
 /*
     Plugin Name: AZIndex
-    Plugin URI: http://azindex.englishmike.net/
-    Description: A highly customizable and user friendly plugin to create one or more alphabetical indexes of selected posts in your Wordpress blog.
-    Version: 0.8.1
-    Author: English Mike
+    Plugin URI: https://github.com/streeetlamp/azindex
+    Description: A highly customizable and user friendly plugin to create one or more alphabetical indexes of selected posts in your Wordpress blog. 
+    Version: 1.0.0
+    Author: English Mike (PHP 8 fork by Cody Whitby)
     Author URI: http://englishmike.net
 */
 
