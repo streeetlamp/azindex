@@ -48,11 +48,7 @@ function az_get_index_content($indexid) {
         if ($count > 0) {
             global $post;
             load_plugin_textdomain('azindex', false, 'azindex');
-            $getPgno = null;
-            if (empty($_GET['pgno']) || !isset($_GET['pgno'])) {
-                $getPgno = 0;
-            }
-            $currentpage = az_is_set($index->options, 'multipage') ? intval($getPgno) : 0;
+            $currentpage = az_is_set($index->options, 'multipage') ? intval($_GET['pgno'] ?? 0) : 0;
         	if ($currentpage > 0) {
                 $currentpage--;
             }
@@ -519,7 +515,8 @@ function az_get_ignorechars($index, $is_multibyte) {
  * Get the current page URL from the HTTP headers.
  */
 function az_current_url() {
-    $url = "http://" . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $url = $scheme . '://' . $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     $pos = strpos($url, "pgno=") - 1;
     // If there is already a pgno parameter in the url, remove it.
     if ($pos > 0) {
