@@ -144,7 +144,7 @@ function az_format_index($index, $items, $indexchars, $currentpage, $pagecount, 
 
                 // Fetch the next item.
                 $curitem = $first + $col * $incol + $i;
-                $item = $items[$curitem];
+                $item = $items[$curitem] ?? null;
                 if (!empty($item) && $curitem < $last) {
                     // Check to see if next entry starts with a different letter.
                     $initial = $item['initial'];
